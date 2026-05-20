@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Σελίδα Σύνδεσης</title>
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="Halalas University" />
+    <meta name="apple-mobile-web-app-title" content="Halalas University" />
+    <meta name="theme-color" content="currentColor" />
+    <script src="https://code.jquery.com/jquery-4.0.0.min.js" integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>WELCOME TO HALALAS UNIVERSITY</h2>
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Εισάγετε το email σας" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Εισάγετε τον κωδικό σας" required>
+            </div>
+            
+            <div class="remember-group">
+                <input type="checkbox" id="remember" name="remember">
+                <label for="remember">Remember Me</label>
+            </div>
+            <div class="loginbtn-group">
+            <button type="submit" class="login-btn">Login</button>
+            </div>
+    </div>
+
+<!-- Το Block του Dashboard -->
+<div class="sd-wrapper" id="studentDashboardBlock">
+    
+    <div class="sd-header">
+        <div>
+            <h2 id="sdStudentName">Φόρτωση...</h2>
+            <p>Αριθμός Μητρώου: <span id="sdStudentID">-</span></p>
+        </div>
+    </div>
+
+    <div class="sd-content">
+        <h3 class="sd-section-title">Τα Μαθήματά μου</h3>
+        <div class="sd-courses-grid" id="sdCoursesGrid">
+            <!-- Οι κάρτες φορτώνονται μέσω JS -->
+        </div>
+    </div>
+
+</div>
+
+</div>
+</body>
+    <script>
+        document.querySelector(".login-btn").addEventListener("click", function() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            fetch("https://halalas-university.onrender.com/login", {
+                method:"POST",
+                body: JSON.stringify({
+                    USERNAME: `${email}`,
+                    PASSWORD: `${password}`
+                })
+            }).then((response) => {
+                return response.json()
+            }).then((data) => {
+                console.log(data)
+                console.log(data.data)
+                let serverData = data.data;
+                if(!serverData.ok) {
+                    console.log("Invalid creds!");
+                }else {
+                    $(".login-container").fadeOut(500, () => {
+                        renderStudentDashboard(serverData);
+                    });
+                }
+            })
+        })
+                function setBodyHeight() {
+            document.body.style.height = window.innerHeight + "px";
+        }
+        setBodyHeight();
+
+function renderStudentDashboard(responseData) {
+
+    const user = responseData.user;
+
+    // Συμπλήρωση στοιχείων φοιτητή (πάνω δεξιά)
+    document.getElementById('sdStudentName').textContent = user.fullName;
+    document.getElementById('sdStudentID').textContent = user.ID;
+
+    const coursesGrid = document.getElementById('sdCoursesGrid');
+    coursesGrid.innerHTML = ''; 
+
+    user.courses.forEach((courseName, index) => {
+        const overallGrade = user.courseOvrGrades[index];
+        const gradesData = user.courseGrades[index] || [];
+        
+        const card = document.createElement('div');
+        card.className = 'sd-course-card';
+
+        // Το header της κάρτας που μπορεί να πατηθεί
+        let cardHTML = `
+            <div class="sd-card-header">
+                <div class="sd-course-title">${courseName}</div>
+                <div class="sd-overall-grade">
+                    <span>Τελικός Βαθμός:</span>
+                    <span>${overallGrade}</span>
+                </div>
+                <div class="sd-toggle-hint">
+                    <span>Αναλυτική Βαθμολογία</span>
+                    <span class="sd-chevron">▼</span>
+                </div>
+            </div>
+            <div class="sd-grades-list">
+        `;
+
+        let hasValidGrades = false;
+
+        gradesData.forEach(gradeItem => {
+            if (!gradeItem || Object.keys(gradeItem).length === 0) return;
+
+            hasValidGrades = true;
+            let name = gradeItem.name !== "" ? gradeItem.name : "Γενικός Βαθμός / Αναγωγή";
+            let gradeValue = gradeItem.grade !== null ? gradeItem.grade : "-";
+            let gradeClass = gradeItem.grade !== null ? "sd-grade-value has-grade" : "sd-grade-value";
+
+            cardHTML += `
+                <div class="sd-grade-item">
+                    <span class="sd-grade-name">${name}</span>
+                    <span class="${gradeClass}">${gradeValue}</span>
+                </div> 
+            `;
+        });
+
+        if (!hasValidGrades) {
+            cardHTML += `<div class="sd-no-grades">Δεν υπάρχουν καταχωρημένες βαθμολογίες</div>`;
+        }
+
+        cardHTML += `</div>`; 
+        card.innerHTML = cardHTML;
+
+        // Προσθήκη Event Listener στο header της κάρτας για να ανοιγοκλείνει
+        card.querySelector('.sd-card-header').addEventListener('click', function() {
+            card.classList.toggle('expanded');
+        });
+
+        coursesGrid.appendChild(card);
+    });
+
+    // Εμφάνιση του Dashboard (χρησιμοποιούμε flex για να δουλεύει σωστά το scroll)
+    document.getElementById('studentDashboardBlock').style.display = 'flex';
+    // document.body.style.overflow = "hidden";
+}
+renderStudentDashboard();
+    </script>
+</html>

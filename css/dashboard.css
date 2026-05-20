@@ -1,0 +1,185 @@
+.sd-wrapper {
+        display: none; /* Το κάνουμε flex μέσω JS, ώστε να παραμένει κρυμμένο αρχικά */
+        flex-direction: column;
+        align-self: flex-start; 
+        
+        width: 100%;
+        max-width: 1200px;
+        max-height: 95vh; 
+        margin: 2.5vh auto; 
+        
+        background-color: #1E293B;
+        border-radius: 12px;
+        overflow: hidden; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #333;
+    }
+
+    .sd-wrapper * {
+        box-sizing: border-box;
+    }
+
+    /* Header - Στοιχισμένο ΠΑΝΩ ΔΕΞΙΑ */
+    .sd-wrapper .sd-header {
+        background-color: #38BDF8;
+        color: #F8FAFC;
+        padding: 20px 30px;
+        display: flex;
+        justify-content: flex-end; /* Σπρώχνει το περιεχόμενο τέρμα δεξιά */
+        align-items: center;
+        text-align: right; /* Τα γράμματα στοιχίζονται στα δεξιά */
+        flex-shrink: 0; 
+        z-index: 10;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .sd-wrapper .sd-header h2 {
+        font-size: 22px;
+        margin: 0 0 5px 0;
+    }
+
+    .sd-wrapper .sd-header p {
+        font-size: 14px;
+        color: #F8FAFC;
+        margin: 0;
+    }
+
+    /* Κυρίως περιεχόμενο (με Scroll) */
+    .sd-wrapper .sd-content {
+        padding: 20px;
+        overflow-y: auto; 
+        flex-grow: 1; 
+    }
+
+    .sd-wrapper .sd-section-title {
+        font-size: 20px;
+        margin: 0 0 20px 0;
+        color: #F8FAFC;
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 10px;
+    }
+
+    .sd-wrapper .sd-courses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    /* Κάρτα Μαθήματος (Βάση) */
+    .sd-wrapper .sd-course-card {
+        background: #1E293B;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #eaeaea;
+        overflow: hidden; /* Κρατάει τις γωνίες στρογγυλές στο hover */
+    }
+
+    /* Το πάνω μέρος της κάρτας που είναι Clickable */
+    .sd-wrapper .sd-card-header {
+        padding: 20px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+
+    .sd-wrapper .sd-course-title {
+        font-size: 16px;
+        font-weight: bold;
+        color: #F8FAFC;
+        margin: 0 0 15px 0;
+        line-height: 1.4;
+    }
+
+    .sd-wrapper .sd-overall-grade {
+        background-color: #0F172A;
+        color: #CBD5E1;
+        padding: 10px;
+        border-radius: 6px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        font-size: 15px;
+    }
+
+    /* Ένδειξη για το "Κλικ για άνοιγμα" */
+    .sd-wrapper .sd-toggle-hint {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: #777;
+        margin-top: 15px;
+        border-top: 1px dashed #eaeaea;
+        padding-top: 10px;
+    }
+
+    .sd-wrapper .sd-chevron {
+        font-size: 12px;
+        transition: transform 0.3s ease;
+    }
+
+    /* Όταν η κάρτα είναι ανοιχτή, το βελάκι γυρνάει 180 μοίρες */
+    .sd-wrapper .sd-course-card.expanded .sd-chevron {
+        transform: rotate(180deg);
+    }
+
+    /* Λίστα Βαθμολογιών (Κρυμμένη από προεπιλογή) */
+    .sd-wrapper .sd-grades-list {
+        display: none; /* ΚΡΥΜΜΕΝΟ */
+        flex-direction: column;
+        gap: 8px;
+        padding: 0 20px 20px 20px; /* Padding μόνο κάτω και στα πλάγια */
+        border-top: 1px solid #eee;
+        background-color: #1E293B;
+    }
+
+    /* Όταν παίρνει την κλάση .expanded, εμφανίζεται το περιεχόμενο */
+    .sd-wrapper .sd-course-card.expanded .sd-grades-list {
+        display: flex; 
+        padding-top: 20px;
+    }
+
+    .sd-wrapper .sd-grade-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 13px;
+    }
+
+    .sd-wrapper .sd-grade-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .sd-wrapper .sd-grade-name {
+        color: #CBD5E1;
+        flex: 1;
+        padding-right: 10px;
+    }
+
+    .sd-wrapper .sd-grade-value {
+        font-weight: bold;
+        background: #0F172A;
+        padding: 4px 8px;
+        border-radius: 4px;
+        min-width: 40px;
+        text-align: center;
+        color: #CBD5E1;
+    }
+
+    .sd-wrapper .sd-grade-value.has-grade {
+        background: #0F172A;
+        color: #2e7d32;
+    }
+
+    .sd-wrapper .sd-no-grades {
+        color: #CBD5E1;
+        font-size: 13px;
+        font-style: italic;
+        text-align: center;
+    }

@@ -251,6 +251,12 @@
                 messageText.text("Dashboard ready. Redirecting...");
                 progress.css("width", "100%");
                 percentText.text("100%");
+                        $(".dashboard-loader-wrapper").fadeOut("fast", () => {
+            document.body.style.overflow = "hidden";
+            // document.getElementById("studentDashboardBlock").style.display = "flex";
+            document.getElementById("studentDashboardBlock").style.display = "flex";
+            $("#studentDashboardBlock").fadeIn("fast");
+        });
                 return;
             }
 

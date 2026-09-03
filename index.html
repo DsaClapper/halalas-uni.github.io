@@ -97,6 +97,9 @@
         const password = document.getElementById("password").value;
         fetch("https://uni-api.halalas-services.xyz/login", {
             method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
             body: JSON.stringify({
                 USERNAME: `${email}`,
                 PASSWORD: `${password}`,
@@ -115,6 +118,9 @@
                     $(".login-container").fadeOut(500, () => {
                         RenderloadingScreen("login");
                         fetch("https://uni-api.halalas-services.xyz/collect", {
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
                             method: "POST",
                             body: JSON.stringify({
                                 token: serverData.token,
@@ -224,7 +230,6 @@
     }
 
     function RenderloadingScreen(state) {
-
         const step = $(".step");
         const progress = $(".progress");
         const percentText = $("#percent");
@@ -233,8 +238,8 @@
 
         let current = 0;
         if (state === "login") {
-            messages = ["Collecting your information!", "Collecting your grades!"]
-                        messageText.text("Authenticating!");
+            messages = ["Collecting your information!", "Collecting your grades!"];
+            messageText.text("Authenticating!");
         } else if (state === "collectDataEnd") {
             current = messages.length + 1;
         }
@@ -251,12 +256,13 @@
                 messageText.text("Dashboard ready. Redirecting...");
                 progress.css("width", "100%");
                 percentText.text("100%");
-                        $(".dashboard-loader-wrapper").fadeOut("fast", () => {
-            document.body.style.overflow = "hidden";
-            // document.getElementById("studentDashboardBlock").style.display = "flex";
-            document.getElementById("studentDashboardBlock").style.display = "flex";
-            $("#studentDashboardBlock").fadeIn("fast");
-        });
+                $(".dashboard-loader-wrapper").fadeOut("fast", () => {
+                    document.body.style.overflow = "hidden";
+                    // document.getElementById("studentDashboardBlock").style.display = "flex";
+                    document.getElementById("studentDashboardBlock").style.display =
+                        "flex";
+                    $("#studentDashboardBlock").fadeIn("fast");
+                });
                 return;
             }
 

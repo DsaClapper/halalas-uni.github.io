@@ -55,6 +55,11 @@
             <div class="sd-courses-grid" id="sdCoursesGrid">
                 <!-- Οι κάρτες φορτώνονται μέσω JS -->
             </div>
+
+            <h3 class="sd-section-title">Επίσημοι Βαθμοί (eduportal)</h3>
+            <div class="sd-courses-grid" id="sdEduportalGrid">
+                <!-- Οι κάρτες φορτώνονται μέσω JS -->
+            </div>
         </div>
     </div>
     <div class="dashboard-loader-wrapper" id="dashboard-loader-wrapper">
@@ -136,6 +141,30 @@
                                 } else {
                                     console.log(collectedData);
                                     renderStudentDashboard(collectedData);
+                                }
+                            });
+
+                        // Οι επίσημοι βαθμοί (eduportal) είναι εντελώς ξεχωριστό login
+                        // (CAS, όχι Moodle token) — τρέχει παράλληλα με το /collect
+                        // παραπάνω, με τα ίδια στοιχεία σύνδεσης.
+                        fetch("https://uni-api.halalas-services.xyz/eduportal-grades", {
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            method: "POST",
+                            body: JSON.stringify({
+                                USERNAME: `${email}`,
+                                PASSWORD: `${password}`,
+                            }),
+                        })
+                            .then((res) => {
+                                return res.json();
+                            })
+                            .then((eduData) => {
+                                if (!eduData.ok) {
+                                    console.log("eduportal-grades failed:", eduData);
+                                } else {
+                                    renderEduportalGrades(eduData.grades);
                                 }
                             });
                     });
@@ -227,6 +256,43 @@
         //     document.getElementById("studentDashboardBlock").style.display = "flex";
         //     $("#studentDashboardBlock").fadeIn("fast");
         // });
+    }
+
+    // Δεδομένα από /eduportal-grades: [{ courseCode, title, grade, isPassed,
+    // semester, examPeriod, units, ects, category, type, ... }, ...] — δομή
+    // πολύ πιο απλή από τα Moodle δεδομένα, μία κάρτα ανά μάθημα χωρίς
+    // αναλυτικά sub-items.
+    function renderEduportalGrades(grades) {
+        const grid = document.getElementById("sdEduportalGrid");
+        grid.innerHTML = "";
+
+        if (!Array.isArray(grades) || grades.length === 0) {
+            grid.innerHTML = `<div class="sd-no-grades">Δεν βρέθηκαν επίσημοι βαθμοί</div>`;
+            return;
+        }
+
+        grades.forEach((course) => {
+            const card = document.createElement("div");
+            card.className = "sd-course-card";
+
+            const gradeValue = course.grade !== null ? course.grade : "-";
+            const gradeClass = course.isPassed ? "sd-overall-grade has-grade" : "sd-overall-grade";
+
+            card.innerHTML = `
+                <div class="sd-card-header">
+                    <div class="sd-course-title">${course.title} <span style="font-weight:normal;color:#94A3B8;">(${course.courseCode})</span></div>
+                    <div class="${gradeClass}">
+                        <span>Βαθμός:</span>
+                        <span>${gradeValue}</span>
+                    </div>
+                    <div class="sd-toggle-hint">
+                        <span>${course.semester || "-"} — ${course.examPeriod || "χωρίς εξεταστική"}</span>
+                    </div>
+                </div>
+            `;
+
+            grid.appendChild(card);
+        });
     }
 
     function RenderloadingScreen(state) {

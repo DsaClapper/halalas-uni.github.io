@@ -20,8 +20,11 @@
 </head>
 
 <body>
-    <div class="login-container">
+    <div class="login-wrapper" id="loginWrapper" style="display: none;">
+        <img src="imgs/halalas-university-logo.svg" alt="Halalas University Portal" width="200" id="logo">
+        <div class="login-container">
         <h2>WELCOME TO HALALAS UNIVERSITY</h2>
+        <p class="login-status" id="loginStatus" role="alert" hidden></p>
         <div class="input-group">
             <label for="email">Email</label>
             <input type="email" id="email" name="email" placeholder="Εισάγετε το email σας" required />
@@ -36,30 +39,60 @@
             <input type="checkbox" id="remember" name="remember" />
             <label for="remember">Remember Me</label>
         </div>
+        <p class="remember-hint">Διατήρηση σύνδεσης σε αυτή τη συσκευή</p>
+
         <div class="loginbtn-group">
             <button type="submit" class="login-btn">Login</button>
+        </div>
         </div>
     </div>
 
     <!-- Το Block του Dashboard -->
     <div class="sd-wrapper" id="studentDashboardBlock">
         <div class="sd-header">
-            <div>
-                <h2 id="sdStudentName">Φόρτωση...</h2>
-                <p>Αριθμός Μητρώου: <span id="sdStudentID">-</span></p>
+            <img src="imgs/halalas-university-logo.svg" alt="Halalas University Portal" class="sd-logo">
+            <div class="sd-header-actions">
+                <div>
+                    <h2 id="sdStudentName">Φόρτωση...</h2>
+                    <p>Αριθμός Μητρώου: <span id="sdStudentID">-</span></p>
+                </div>
+                <button class="sd-signout-btn" id="signOutBtn" type="button">Sign out</button>
             </div>
         </div>
 
         <div class="sd-content">
-            <h3 class="sd-section-title">Τα Μαθήματά μου</h3>
-            <div class="sd-courses-grid" id="sdCoursesGrid">
-                <!-- Οι κάρτες φορτώνονται μέσω JS -->
+            <div class="sd-toolbar" role="status" aria-live="polite">
+                <div class="sd-status-block">
+                    <span class="sd-status-dot" aria-hidden="true"></span>
+                    <span id="dashboardStatus">Συνδεδεμένος</span>
+                    <span class="sd-last-updated" id="lastUpdated"></span>
+                </div>
+                <button class="sd-refresh-btn" id="refreshBtn" type="button">Ανανέωση</button>
             </div>
 
-            <h3 class="sd-section-title">Επίσημοι Βαθμοί (eduportal)</h3>
-            <div class="sd-courses-grid" id="sdEduportalGrid">
-                <!-- Οι κάρτες φορτώνονται μέσω JS -->
-            </div>
+            <section class="sd-category is-open">
+                <button class="sd-category-toggle" type="button" aria-expanded="true" aria-controls="sdCoursesPanel">
+                    <span>Τα Μαθήματά μου</span>
+                    <span class="sd-category-chevron" aria-hidden="true">⌄</span>
+                </button>
+                <div class="sd-category-content" id="sdCoursesPanel">
+                    <div class="sd-courses-grid" id="sdCoursesGrid">
+                        <!-- Οι κάρτες φορτώνονται μέσω JS -->
+                    </div>
+                </div>
+            </section>
+
+            <section class="sd-category">
+                <button class="sd-category-toggle" type="button" aria-expanded="false" aria-controls="sdEduportalPanel">
+                    <span>Επίσημοι Βαθμοί (eduportal)</span>
+                    <span class="sd-category-chevron" aria-hidden="true">⌄</span>
+                </button>
+                <div class="sd-category-content" id="sdEduportalPanel">
+                    <div class="sd-courses-grid" id="sdEduportalGrid">
+                        <!-- Οι κάρτες φορτώνονται μέσω JS -->
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
     <div class="dashboard-loader-wrapper" id="dashboard-loader-wrapper">
@@ -97,87 +130,221 @@
     </div>
 </body>
 <script>
-    document.querySelector(".login-btn").addEventListener("click", function () {
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        fetch("https://uni-api.halalas-services.xyz/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                USERNAME: `${email}`,
-                PASSWORD: `${password}`,
-            }),
-        })
-            .then((response) => {
-                return response.json();
-            })
-            .then((data) => {
-                let serverData = data.data;
-                if (!serverData.ok) {
-                    console.log("Invalid creds!");
-                } else {
-                    //collectData
-                    console.log(serverData);
-                    $(".login-container").fadeOut(500, () => {
-                        RenderloadingScreen("login");
-                        fetch("https://uni-api.halalas-services.xyz/collect", {
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            method: "POST",
-                            body: JSON.stringify({
-                                token: serverData.token,
-                            }),
-                        })
-                            .then((res) => {
-                                return res.json();
-                            })
-                            .then((colldata) => {
-                                let collectedData = colldata.data;
-                                if (!collectedData.ok) {
-                                    console.log(collectedData);
-                                } else {
-                                    console.log(collectedData);
-                                    renderStudentDashboard(collectedData);
-                                }
-                            });
+    const authBaseUrl = "https://uni-api.halalas-services.xyz/auth";
+    const rememberSessionKey = "halalasRememberSession";
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const rememberInput = document.getElementById("remember");
+    const loginStatus = document.getElementById("loginStatus");
 
-                        // Οι επίσημοι βαθμοί (eduportal) είναι εντελώς ξεχωριστό login
-                        // (CAS, όχι Moodle token) — τρέχει παράλληλα με το /collect
-                        // παραπάνω, με τα ίδια στοιχεία σύνδεσης.
-                        fetch("https://uni-api.halalas-services.xyz/eduportal-grades", {
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            method: "POST",
-                            body: JSON.stringify({
-                                USERNAME: `${email}`,
-                                PASSWORD: `${password}`,
-                            }),
-                        })
-                            .then((res) => {
-                                return res.json();
-                            })
-                            .then((eduData) => {
-                                if (!eduData.ok) {
-                                    console.log("eduportal-grades failed:", eduData);
-                                } else {
-                                    renderEduportalGrades(eduData.grades);
-                                }
-                            });
-                    });
-                }
+    let loginAttempt = 0;
+    let dashboardReady = false;
+    let loaderRunId = 0;
+    let currentData = null;
+    let messages = [];
+
+    function setLoginStatus(message) {
+        loginStatus.textContent = message;
+        loginStatus.hidden = !message;
+    }
+
+    function setDashboardStatus(message, isError = false) {
+        const status = document.getElementById("dashboardStatus");
+        status.textContent = message;
+        status.classList.toggle("is-error", isError);
+    }
+
+    function setLastUpdated() {
+        document.getElementById("lastUpdated").textContent =
+            `Τελευταία ενημέρωση: ${new Intl.DateTimeFormat("el-GR", {
+                dateStyle: "short",
+                timeStyle: "short",
+            }).format(new Date())}`;
+    }
+
+    async function startLogin(email, password) {
+        const attemptId = ++loginAttempt;
+        dashboardReady = false;
+        setLoginStatus("");
+        if (rememberInput.checked) {
+            localStorage.setItem(rememberSessionKey, "true");
+        } else {
+            localStorage.removeItem(rememberSessionKey);
+        }
+        loaderRunId++;
+        $(".dashboard-loader-wrapper").stop(true, true).hide();
+        $("#loginWrapper").stop(true, true).fadeOut(300, () => {
+            if (attemptId === loginAttempt && !dashboardReady) {
+                RenderloadingScreen("login");
+            }
+        });
+
+        try {
+            const response = await fetch(`${authBaseUrl}/login`, {
+                credentials: "include",
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: email,
+                    password,
+                    remember: rememberInput.checked,
+                }),
             });
+            const data = await response.json();
+            if (attemptId !== loginAttempt) return;
+            if (response.status === 401) returnToLogin("Λάθος στοιχεία σύνδεσης.");
+            else if (response.status === 429) returnToLogin("Πολλές προσπάθειες, δοκίμασε ξανά σε λίγο.");
+            else if (!response.ok || !data.ok) returnToLogin(data.message || "Δεν ήταν δυνατή η σύνδεση.");
+            else renderDashboardData(data);
+        } catch {
+            if (attemptId === loginAttempt) returnToLogin("Δεν ήταν δυνατή η σύνδεση. Δοκίμασε ξανά.");
+        }
+    }
+
+    async function restoreSession() {
+        RenderloadingScreen("login");
+
+        try {
+            const response = await fetch(`${authBaseUrl}/session`, {
+                credentials: "include",
+            });
+            const data = await response.json();
+
+            if (response.ok && data.ok) {
+                renderDashboardData(data);
+            } else if (response.status === 401) {
+                returnToLogin();
+            } else {
+                returnToLogin(data.message || "Δεν ήταν δυνατή η επαναφορά της σύνδεσης.");
+            }
+        } catch {
+            returnToLogin("Δεν ήταν δυνατή η σύνδεση με τον server.");
+        }
+    }
+
+    function renderDashboardData(data) {
+        currentData = data;
+        renderStudentDashboard(data);
+        renderEduportalGrades(data.eduportalGrades);
+    }
+
+    document.querySelector(".login-btn").addEventListener("click", () => {
+        startLogin(emailInput.value.trim(), passwordInput.value);
     });
     function setBodyHeight() {
         document.body.style.height = window.innerHeight + "px";
     }
     setBodyHeight();
 
-    function renderStudentDashboard(responseData) {
+    function returnToLogin(message = "") {
+        loginAttempt++;
+        dashboardReady = false;
+        currentData = null;
+        loaderRunId++;
+        document.body.classList.remove("dashboard-mode");
+        document.body.style.overflow = "hidden";
+        setLoginStatus(message);
+        $(".dashboard-loader-wrapper").stop(true, true).fadeOut(150);
+        $("#studentDashboardBlock").stop(true, true).fadeOut(200);
+        $(".login-wrapper").stop(true, true).fadeIn(250);
+    }
+
+    document.getElementById("signOutBtn").addEventListener("click", () => {
+        loginAttempt++;
+        dashboardReady = false;
+        loaderRunId++;
+        fetch(`${authBaseUrl}/logout`, {
+            credentials: "include",
+            method: "POST",
+        }).catch(() => {});
+
+        document.body.classList.remove("dashboard-mode");
+        document.body.style.overflow = "hidden";
+        $("#studentDashboardBlock").stop(true, true).fadeOut(250, () => {
+                document.getElementById("sdStudentName").textContent = "Φόρτωση...";
+                document.getElementById("sdStudentID").textContent = "-";
+                document.getElementById("sdCoursesGrid").innerHTML = "";
+                document.getElementById("sdEduportalGrid").innerHTML = "";
+                $(".dashboard-loader-wrapper").stop(true, true).hide();
+                document.querySelectorAll(".sd-category").forEach((category, index) => {
+                    const isOpen = index === 0;
+                    category.classList.toggle("is-open", isOpen);
+                    category.querySelector(".sd-category-toggle").setAttribute(
+                        "aria-expanded",
+                        String(isOpen),
+                    );
+                });
+                passwordInput.value = "";
+                emailInput.value = "";
+                rememberInput.checked = false;
+                localStorage.removeItem(rememberSessionKey);
+                currentData = null;
+                $(".login-wrapper").stop(true, true).fadeIn(250);
+        });
+    });
+
+    async function refreshDashboardData() {
+        if (!currentData) return;
+
+        const refreshButton = document.getElementById("refreshBtn");
+        refreshButton.disabled = true;
+        setDashboardStatus("Ανανέωση δεδομένων...");
+
+        try {
+            const response = await fetch(`${authBaseUrl}/session`, {
+                credentials: "include",
+            });
+            const data = await response.json();
+
+            if (response.status === 429) throw new Error("RATE_LIMITED");
+            if (response.status === 401) {
+                returnToLogin("Η σύνδεση έληξε. Συνδέσου ξανά.");
+                return;
+            }
+            if (!response.ok || !data.ok) throw new Error("REFRESH_FAILED");
+
+            renderDashboardData(data);
+            setDashboardStatus("Συνδεδεμένος");
+            setLastUpdated();
+        } catch (error) {
+            setDashboardStatus(
+                error.message === "RATE_LIMITED"
+                    ? "Πολλές προσπάθειες. Δοκιμάστε ξανά αργότερα."
+                    : "Η ανανέωση απέτυχε. Δοκιμάστε ξανά.",
+                true,
+            );
+        } finally {
+            refreshButton.disabled = false;
+        }
+    }
+
+    document.querySelectorAll(".sd-category-toggle").forEach((toggle) => {
+        toggle.addEventListener("click", () => {
+            const category = toggle.closest(".sd-category");
+            const isOpen = category.classList.toggle("is-open");
+            toggle.setAttribute("aria-expanded", String(isOpen));
+
+            if (isOpen) {
+                document.querySelectorAll(".sd-category").forEach((otherCategory) => {
+                    if (otherCategory === category) return;
+
+                    otherCategory.classList.remove("is-open");
+                    otherCategory
+                        .querySelector(".sd-category-toggle")
+                        .setAttribute("aria-expanded", "false");
+                });
+            }
+        });
+    });
+
+    function renderStudentDashboard(responseData, isRefresh = false) {
         const user = responseData.user;
+
+        if (!user) return;
+
+        dashboardReady = true;
+        setDashboardStatus("Συνδεδεμένος");
+        setLastUpdated();
 
         // Συμπλήρωση στοιχείων φοιτητή (πάνω δεξιά)
         document.getElementById("sdStudentName").textContent = user.fullName;
@@ -186,17 +353,24 @@
         const coursesGrid = document.getElementById("sdCoursesGrid");
         coursesGrid.innerHTML = "";
 
-        user.courses.forEach((courseName, index) => {
-            const overallGrade = user.courseOvrGrades[index];
-            const gradesData = user.courseGrades[index] || [];
+        const courses = Array.isArray(responseData.courses) ? responseData.courses : [];
+
+        if (courses.length === 0) {
+            coursesGrid.innerHTML =
+                `<div class="sd-no-grades">Δεν βρέθηκαν μαθήματα για τον λογαριασμό σας.</div>`;
+        }
+
+        courses.forEach((course) => {
+            const overallGrade = course.overallGrade ?? "-";
+            const gradesData = Array.isArray(course.grades) ? course.grades : [];
 
             const card = document.createElement("div");
             card.className = "sd-course-card";
 
             // Το header της κάρτας που μπορεί να πατηθεί
             let cardHTML = `
-            <div class="sd-card-header">
-                <div class="sd-course-title">${courseName}</div>
+            <div class="sd-card-header" tabindex="0" role="button" aria-expanded="false">
+                <div class="sd-course-title">${course.name}</div>
                 <div class="sd-overall-grade">
                     <span>Τελικός Βαθμός:</span>
                     <span>${overallGrade}</span>
@@ -239,17 +413,25 @@
             card.innerHTML = cardHTML;
 
             // Προσθήκη Event Listener στο header της κάρτας για να ανοιγοκλείνει
-            card
-                .querySelector(".sd-card-header")
-                .addEventListener("click", function () {
-                    card.classList.toggle("expanded");
-                });
+            const cardHeader = card.querySelector(".sd-card-header");
+            const toggleCard = () => {
+                const isExpanded = card.classList.toggle("expanded");
+                cardHeader.setAttribute("aria-expanded", String(isExpanded));
+            };
+
+            cardHeader.addEventListener("click", toggleCard);
+            cardHeader.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggleCard();
+                }
+            });
 
             coursesGrid.appendChild(card);
         });
 
         // Εμφάνιση του Dashboard (χρησιμοποιούμε flex για να δουλεύει σωστά το scroll)
-        RenderloadingScreen("collectDataEnd");
+        if (!isRefresh) RenderloadingScreen("collectDataEnd");
         // $(".dashboard-loader-wrapper").fadeOut("fast", () => {
         //     document.body.style.overflow = "hidden";
         //     // document.getElementById("studentDashboardBlock").style.display = "flex";
@@ -271,22 +453,40 @@
             return;
         }
 
-        grades.forEach((course) => {
+        const sortedGrades = [...grades].sort((firstCourse, secondCourse) =>
+            String(firstCourse.courseCode ?? "").localeCompare(
+                String(secondCourse.courseCode ?? ""),
+                undefined,
+                { numeric: true, sensitivity: "base" },
+            ),
+        );
+
+        sortedGrades.forEach((course) => {
             const card = document.createElement("div");
             card.className = "sd-course-card";
 
             const gradeValue = course.grade !== null ? course.grade : "-";
             const gradeClass = course.isPassed ? "sd-overall-grade has-grade" : "sd-overall-grade";
+            const statusLabel = course.isPassed ? "Πέρασε" : "Σε εκκρεμότητα";
+            const courseMeta = [
+                course.semester ? `Εξάμηνο: ${course.semester}` : "",
+                course.examPeriod ? `Εξεταστική: ${course.examPeriod}` : "",
+                course.units !== undefined ? `Μονάδες: ${course.units}` : "",
+                course.ects !== undefined ? `ECTS: ${course.ects}` : "",
+            ].filter(Boolean);
 
             card.innerHTML = `
                 <div class="sd-card-header">
-                    <div class="sd-course-title">${course.title} <span style="font-weight:normal;color:#94A3B8;">(${course.courseCode})</span></div>
+                    <div class="sd-course-title">${course.title} <span class="sd-course-code">(${course.courseCode})</span></div>
                     <div class="${gradeClass}">
                         <span>Βαθμός:</span>
                         <span>${gradeValue}</span>
                     </div>
-                    <div class="sd-toggle-hint">
-                        <span>${course.semester || "-"} — ${course.examPeriod || "χωρίς εξεταστική"}</span>
+                    <div class="sd-course-meta">
+                        ${courseMeta.map((item) => `<span>${item}</span>`).join("")}
+                    </div>
+                    <div class="sd-course-status ${course.isPassed ? "is-passed" : "is-pending"}">
+                        ${statusLabel}
                     </div>
                 </div>
             `;
@@ -296,21 +496,30 @@
     }
 
     function RenderloadingScreen(state) {
+        const currentLoaderRunId = ++loaderRunId;
         const step = $(".step");
         const progress = $(".progress");
         const percentText = $("#percent");
         const messageText = $(".message");
         const spinner = $(".spinner");
 
+        step.removeAttr("style");
+        spinner.removeAttr("style").empty();
+        progress.css("width", "0%");
+        percentText.text("0%");
         let current = 0;
         if (state === "login") {
-            messages = ["Collecting your information!", "Collecting your grades!"];
-            messageText.text("Authenticating!");
+            messages = ["Συλλογή μαθημάτων...", "Συλλογή επίσημων βαθμών..."];
+            messageText.text("Έλεγχος στοιχείων σύνδεσης...");
         } else if (state === "collectDataEnd") {
-            current = messages.length + 1;
+            current = messages.length;
         }
         function runLoader() {
+            if (currentLoaderRunId !== loaderRunId) return;
+
             if (current >= messages.length) {
+                if (!dashboardReady) return;
+
                 spinner.html("✓");
                 spinner.css({
                     animation: "none",
@@ -319,11 +528,12 @@
                     fontSize: "18px",
                 });
 
-                messageText.text("Dashboard ready. Redirecting...");
+                messageText.text("Τα δεδομένα είναι έτοιμα.");
                 progress.css("width", "100%");
                 percentText.text("100%");
                 $(".dashboard-loader-wrapper").fadeOut("fast", () => {
                     document.body.style.overflow = "hidden";
+                    document.body.classList.add("dashboard-mode");
                     // document.getElementById("studentDashboardBlock").style.display = "flex";
                     document.getElementById("studentDashboardBlock").style.display =
                         "flex";
@@ -337,6 +547,8 @@
                 transform: "translateY(10px)",
             });
             setTimeout(() => {
+                if (currentLoaderRunId !== loaderRunId) return;
+
                 messageText.text(messages[current]);
 
                 step.css({
@@ -355,9 +567,15 @@
             }, 300);
         }
 
-        setTimeout(runLoader, 700);
+        setTimeout(runLoader, state === "collectDataEnd" ? 0 : 700);
         document.getElementById("dashboard-loader-wrapper").style.display =
             "flex";
+    }
+
+    if (localStorage.getItem(rememberSessionKey) === "true") {
+        restoreSession();
+    } else {
+        returnToLogin();
     }
 </script>
 

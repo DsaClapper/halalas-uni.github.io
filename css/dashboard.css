@@ -4,16 +4,18 @@
         align-self: flex-start; 
         
         width: 100%;
-        max-width: 1200px;
-        max-height: 95vh; 
-        margin: 2.5vh auto; 
+        max-width: none;
+        height: 100vh;
+        max-height: none;
+        margin: 0;
         
-        background-color: #1E293B;
-        border-radius: 12px;
+        background-color: var(--near-black-teal);
+        border-radius: 0;
         overflow: hidden; 
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #333;
+        box-shadow: none;
+        font-family: var(--font-body);
+        color: var(--off-white);
+        border: 0;
     }
 
     .sd-wrapper * {
@@ -22,8 +24,8 @@
 
     /* Header - Στοιχισμένο ΠΑΝΩ ΔΕΞΙΑ */
     .sd-wrapper .sd-header {
-        background-color: #38BDF8;
-        color: #F8FAFC;
+        background: linear-gradient(180deg, var(--mint-teal), var(--deep-teal));
+        color: var(--off-white);
         padding: 20px 30px;
         display: flex;
         justify-content: flex-end; /* Σπρώχνει το περιεχόμενο τέρμα δεξιά */
@@ -31,7 +33,13 @@
         text-align: right; /* Τα γράμματα στοιχίζονται στα δεξιά */
         flex-shrink: 0; 
         z-index: 10;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 18px rgba(0, 0, 0, 0.3);
+    }
+
+    .sd-wrapper .sd-logo {
+        width: 150px;
+        height: auto;
+        margin-right: auto;
     }
 
     .sd-wrapper .sd-header h2 {
@@ -41,23 +49,218 @@
 
     .sd-wrapper .sd-header p {
         font-size: 14px;
-        color: #F8FAFC;
+        color: var(--off-white);
+        font-family: var(--font-data);
         margin: 0;
+    }
+
+    .sd-wrapper .sd-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .sd-wrapper .sd-signout-btn {
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        border-radius: 999px;
+        padding: 10px 16px;
+        background: rgba(8, 28, 36, 0.35);
+        color: var(--off-white);
+        font: 600 13px var(--font-body);
+        cursor: pointer;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .sd-wrapper .sd-signout-btn:hover,
+    .sd-wrapper .sd-signout-btn:focus-visible {
+        background: var(--deep-teal);
+        border-color: var(--mint-teal);
+        outline: none;
     }
 
     /* Κυρίως περιεχόμενο (με Scroll) */
     .sd-wrapper .sd-content {
-        padding: 20px;
-        overflow-y: auto; 
-        flex-grow: 1; 
+        padding: 32px 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        scrollbar-width: none;
+        min-height: 0;
+        height: auto;
+        flex: 1 1 0;
     }
 
-    .sd-wrapper .sd-section-title {
-        font-size: 20px;
-        margin: 0 0 20px 0;
-        color: #F8FAFC;
-        border-bottom: 2px solid #ccc;
-        padding-bottom: 10px;
+    .sd-wrapper .sd-content::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sd-wrapper .sd-category,
+    .sd-wrapper .sd-category-toggle,
+    .sd-wrapper .sd-category-content,
+    .sd-wrapper .sd-courses-grid {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .sd-wrapper .sd-category {
+        width: calc(100% - 40px);
+        margin-right: 20px;
+        margin-left: 20px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--near-black-teal);
+        overflow: hidden;
+    }
+
+    .sd-wrapper .sd-category + .sd-category {
+        margin-top: 24px;
+    }
+
+    .sd-wrapper .sd-category-toggle {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        border: 0;
+        border-bottom: 1px solid transparent;
+        height: 60px;
+        min-height: 60px;
+        max-height: 60px;
+        flex: none;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--panel-dark);
+        color: var(--off-white);
+        font: 600 18px var(--font-heading);
+        line-height: 1.2;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .sd-wrapper .sd-category-toggle > span:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sd-wrapper .sd-category-toggle:hover {
+        background: var(--panel-dark);
+        color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-category.is-open .sd-category-toggle {
+        border-bottom-color: var(--border-subtle);
+    }
+
+    .sd-wrapper .sd-category-chevron {
+        flex: 0 0 28px;
+        width: 28px;
+        color: var(--mint-teal);
+        font-family: var(--font-body);
+        font-size: 26px;
+        line-height: 1;
+        text-align: center;
+        transition: transform 0.2s ease;
+    }
+
+    .sd-wrapper .sd-category.is-open .sd-category-chevron {
+        transform: rotate(180deg);
+    }
+
+    .sd-wrapper .sd-toolbar {
+        width: calc(100% - 40px);
+        min-height: 58px;
+        margin: 0 20px 24px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--panel-dark);
+    }
+
+    .sd-wrapper .sd-status-block {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--pale-mint);
+        font-size: 13px;
+    }
+
+    .sd-wrapper .sd-status-dot {
+        flex: 0 0 8px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--mint-teal);
+        box-shadow: 0 0 12px rgba(94, 234, 212, 0.7);
+    }
+
+    .sd-wrapper .sd-status-dot:has(+ #dashboardStatus.is-error) {
+        background: #ff8f8f;
+        box-shadow: none;
+    }
+
+    .sd-wrapper #dashboardStatus.is-error {
+        color: #ffb7b7;
+    }
+
+    .sd-wrapper .sd-last-updated {
+        color: var(--cool-gray);
+        font: 11px var(--font-data);
+        white-space: nowrap;
+    }
+
+    .sd-wrapper .sd-refresh-btn {
+        flex: 0 0 auto;
+        border: 1px solid var(--mint-teal);
+        border-radius: 999px;
+        padding: 9px 14px;
+        background: transparent;
+        color: var(--mint-teal);
+        font: 600 12px var(--font-body);
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .sd-wrapper .sd-refresh-btn:hover,
+    .sd-wrapper .sd-refresh-btn:focus-visible {
+        background: var(--mint-teal);
+        color: var(--near-black-teal);
+        outline: none;
+    }
+
+    .sd-wrapper .sd-refresh-btn:disabled {
+        opacity: 0.55;
+        cursor: wait;
+    }
+
+    .sd-wrapper .sd-category-content {
+        display: grid;
+        grid-template-rows: 0fr;
+        padding: 0 20px;
+        opacity: 0;
+        overflow: hidden;
+        transition: grid-template-rows 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+    }
+
+    .sd-wrapper .sd-category.is-open .sd-category-content {
+        grid-template-rows: 1fr;
+        padding: 20px;
+        opacity: 1;
+    }
+
+    .sd-wrapper .sd-category-content > .sd-courses-grid {
+        min-height: 0;
+        overflow: hidden;
     }
 
     .sd-wrapper .sd-courses-grid {
@@ -68,13 +271,21 @@
 
     /* Κάρτα Μαθήματος (Βάση) */
     .sd-wrapper .sd-course-card {
-        background: #1E293B;
+        background: var(--panel-dark);
         border-radius: 10px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         display: flex;
         flex-direction: column;
-        border: 1px solid #eaeaea;
+        border: 1px solid var(--border-subtle);
         overflow: hidden; /* Κρατάει τις γωνίες στρογγυλές στο hover */
+    }
+
+    .sd-wrapper .sd-category-toggle:focus-visible,
+    .sd-wrapper .sd-card-header:focus-visible,
+    .sd-wrapper .sd-refresh-btn:focus-visible,
+    .sd-wrapper .sd-signout-btn:focus-visible {
+        outline: 2px solid var(--mint-teal);
+        outline-offset: 3px;
     }
 
     /* Το πάνω μέρος της κάρτας που είναι Clickable */
@@ -88,14 +299,45 @@
     .sd-wrapper .sd-course-title {
         font-size: 16px;
         font-weight: bold;
-        color: #F8FAFC;
+        color: var(--off-white);
         margin: 0 0 15px 0;
         line-height: 1.4;
     }
 
+    .sd-wrapper .sd-course-code {
+        color: var(--cool-gray);
+        font: 500 12px var(--font-data);
+    }
+
+    .sd-wrapper .sd-course-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        margin-top: 12px;
+        color: var(--cool-gray);
+        font: 11px var(--font-data);
+    }
+
+    .sd-wrapper .sd-course-status {
+        width: fit-content;
+        margin-top: 12px;
+        padding: 4px 9px;
+        border: 1px solid var(--cool-gray);
+        border-radius: 999px;
+        color: var(--cool-gray);
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .sd-wrapper .sd-course-status.is-passed {
+        border-color: var(--mint-teal);
+        color: var(--mint-teal);
+    }
+
     .sd-wrapper .sd-overall-grade {
-        background-color: #0F172A;
-        color: #CBD5E1;
+        background-color: var(--near-black-teal);
+        color: var(--pale-mint);
+        font-family: var(--font-data);
         padding: 10px;
         border-radius: 6px;
         font-weight: bold;
@@ -110,9 +352,9 @@
         justify-content: space-between;
         align-items: center;
         font-size: 13px;
-        color: #777;
+        color: var(--cool-gray);
         margin-top: 15px;
-        border-top: 1px dashed #eaeaea;
+        border-top: 1px dashed var(--cool-gray);
         padding-top: 10px;
     }
 
@@ -132,8 +374,8 @@
         flex-direction: column;
         gap: 8px;
         padding: 0 20px 20px 20px; /* Padding μόνο κάτω και στα πλάγια */
-        border-top: 1px solid #eee;
-        background-color: #1E293B;
+        border-top: 1px solid var(--border-subtle);
+        background-color: var(--near-black-teal);
     }
 
     /* Όταν παίρνει την κλάση .expanded, εμφανίζεται το περιεχόμενο */
@@ -147,7 +389,7 @@
         justify-content: space-between;
         align-items: center;
         padding-bottom: 8px;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--border-subtle);
         font-size: 13px;
     }
 
@@ -157,29 +399,82 @@
     }
 
     .sd-wrapper .sd-grade-name {
-        color: #CBD5E1;
+        color: var(--pale-mint);
         flex: 1;
         padding-right: 10px;
     }
 
     .sd-wrapper .sd-grade-value {
         font-weight: bold;
-        background: #0F172A;
+        background: var(--panel-dark);
         padding: 4px 8px;
         border-radius: 4px;
         min-width: 40px;
         text-align: center;
-        color: #CBD5E1;
+        color: var(--pale-mint);
+        font-family: var(--font-data);
     }
 
     .sd-wrapper .sd-grade-value.has-grade {
-        background: #0F172A;
-        color: #2e7d32;
+        background: var(--panel-dark);
+        color: var(--mint-teal);
     }
 
     .sd-wrapper .sd-no-grades {
-        color: #CBD5E1;
+        color: var(--cool-gray);
         font-size: 13px;
         font-style: italic;
         text-align: center;
+        padding: 18px;
+        border: 1px dashed var(--cool-gray);
+        border-radius: 8px;
+    }
+
+    @media (max-width: 480px) {
+        .sd-wrapper .sd-header {
+            min-height: 120px;
+            padding: 14px 20px;
+        }
+
+        .sd-wrapper .sd-logo {
+            width: 88px;
+            height: 86px;
+            object-fit: contain;
+        }
+
+        .sd-wrapper .sd-header h2 {
+            font-size: 18px;
+        }
+
+        .sd-wrapper .sd-header p {
+            font-size: 11px;
+        }
+
+        .sd-wrapper .sd-header-actions {
+            gap: 10px;
+        }
+
+        .sd-wrapper .sd-signout-btn {
+            padding: 8px 10px;
+            font-size: 11px;
+        }
+
+        .sd-wrapper .sd-toolbar {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sd-wrapper .sd-status-block {
+            flex-wrap: wrap;
+        }
+
+        .sd-wrapper .sd-last-updated {
+            width: 100%;
+            padding-left: 17px;
+        }
+
+        .sd-wrapper .sd-refresh-btn {
+            width: 100%;
+        }
     }

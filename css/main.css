@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
 
 :root {
@@ -209,4 +210,193 @@ body.dashboard-mode {
     display: block;
     max-width: 100%;
     height: auto;
+=======
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+:root {
+    --mint-teal: #5eead4;
+    --deep-teal: #0f5c5c;
+    --near-black-teal: #081c24;
+    --pure-black: #000000;
+    --panel-dark: #0c2429;
+    --off-white: #f4f6fa;
+    --pale-mint: #d7f5ef;
+    --cool-gray: #b8c4ce;
+    --white: #ffffff;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --font-heading: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
+    --font-data: "JetBrains Mono", monospace;
+}
+
+/* Βασικές ρυθμίσεις για σωστές διαστάσεις */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3 {
+    font-family: var(--font-heading);
+}
+
+/* Ρυθμίσεις του φόντου για κεντράρισμα του παραθύρου */
+body {
+    background-color: var(--pure-black);
+    color: var(--off-white);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow: hidden;
+    /* Εξασφαλίζει ότι το πλαίσιο δεν κολλάει στις άκρες της οθόνης στα κινητά */
+}
+
+.login-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    transform: translateY(-60px);
+}
+
+/* Το λευκό πλαίσιο της φόρμας */
+.login-container {
+    background-color: var(--near-black-teal);
+    padding: 40px 30px;
+    border-radius: 30px;
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+    width: 100%;
+    max-width: 400px;
+        overflow: hidden;
+    /* Σε Desktop σταματάει στα 400px, στα κινητά πιάνει όλο το πλάτος */
+}
+
+.login-container * {
+    -webkit-touch-callout: none;
+    /* Prevents callout to copy/share/etc when long-pressed */
+    -webkit-user-select: none;
+    /* Safari */
+    -khtml-user-select: none;
+    /* Konqueror HTML */
+    -moz-user-select: none;
+    /* Firefox */
+    -ms-user-select: none;
+    /* Internet Explorer/Edge */
+    user-select: none;
+    /* Standard */
+}
+
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: var(--off-white);
+}
+
+/* Ομαδοποίηση των πεδίων (label + input) */
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--off-white);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.input-group input[type="email"],
+.input-group input[type="password"] {
+    background-color: var(--panel-dark);
+    color: var(--off-white);
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--cool-gray);
+    border-radius: 14px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+/* Εφέ όταν ο χρήστης κάνει κλικ στο πεδίο (focus) */
+.input-group input[type="email"]:focus,
+.input-group input[type="password"]:focus {
+    border-color: var(--mint-teal);
+    outline: none;
+    box-shadow: 0 0 14px rgba(94, 234, 212, 0.25);
+}
+
+/* Ρυθμίσεις για το "Να με θυμάσαι" */
+.remember-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.remember-group input[type="checkbox"] {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 2px solid var(--off-white);
+    border-radius: 50%;
+    /* Κάνει το checkbox ολοστρόγγυλο. Αν θες απλά στρογγυλεμένες γωνίες, βάλε 4px */
+}
+
+.remember-group input[type="checkbox"]:checked {
+    background-color: var(--mint-teal);
+    border-color: var(--mint-teal);
+}
+
+.remember-group label {
+    color: var(--off-white);
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+    /* Αποτρέπει την επιλογή κειμένου όταν γίνεται κλικ στο label */
+}
+
+.loginbtn-group {
+    display: flex;
+    justify-content: center;
+}
+
+/* Κουμπί εισόδου */
+.login-btn {
+    width: 50%;
+    padding: 12px;
+    background: var(--deep-teal);
+    color: var(--off-white);
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-btn:hover {
+    background: var(--mint-teal);
+    color: var(--near-black-teal);
+}
+
+/* Media Query για μικρές οθόνες κινητών (λεπτομέρειες padding) */
+@media (max-width: 480px) {
+    .login-container {
+        padding: 30px 20px;
+    }
+}
+#logo {
+    display: block;
+    max-width: 100%;
+    height: auto;
+>>>>>>> 4df4fe12a05c1015fb2673dc2fa6e2fbae521dbe
 }

@@ -6,7 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-    <title>Σελίδα Σύνδεσης</title>
+    <title>Halalas University Portal</title>
+    <link rel="icon" href="imgs/halalas-university-logo.png" type="image/png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script src="js/app-config.js" defer></script>
     <link rel="stylesheet" type="text/css" href="css/main.css" />
     <link rel="stylesheet" type="text/css" href="css/dashboard.css" />
     <link rel="stylesheet" type="text/css" href="css/loading.css" />
@@ -21,9 +24,9 @@
 
 <body>
     <div class="login-wrapper" id="loginWrapper" style="display: none;">
-        <img src="imgs/halalas-university-logo.svg" alt="Halalas University Portal" width="200" id="logo">
+        <img src="imgs/halalas-university-logo.png" alt="Halalas University Portal" width="200" id="logo" data-app-logo>
         <div class="login-container">
-        <h2>WELCOME TO HALALAS UNIVERSITY</h2>
+        <h2>WELCOME TO <span data-app-name>HALALAS UNIVERSITY</span></h2>
         <p class="login-status" id="loginStatus" role="alert" hidden></p>
         <div class="input-group">
             <label for="email">Email</label>
@@ -50,7 +53,7 @@
     <!-- Το Block του Dashboard -->
     <div class="sd-wrapper" id="studentDashboardBlock">
         <div class="sd-header">
-            <img src="imgs/halalas-university-logo.svg" alt="Halalas University Portal" class="sd-logo">
+            <img src="imgs/halalas-university-logo.png" alt="Halalas University Portal" class="sd-logo" data-app-logo>
             <div class="sd-header-actions">
                 <div>
                     <h2 id="sdStudentName">Φόρτωση...</h2>

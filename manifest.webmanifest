@@ -1,0 +1,17 @@
+{
+  "name": "Halalas University Portal",
+  "short_name": "Halalas University",
+  "description": "Halalas University student portal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#081c24",
+  "theme_color": "#0f5c5c",
+  "icons": [
+    {
+      "src": "imgs/halalas-university-logo-dark.png",
+      "sizes": "1024x1200",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

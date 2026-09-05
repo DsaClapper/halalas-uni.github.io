@@ -20,7 +20,9 @@
 </head>
 
 <body>
-    <div class="login-container">
+    <div class="login-wrapper">
+        <img src="imgs/halalas-university-logo.svg" alt="Halalas University Portal" width="200" id="logo">
+        <div class="login-container">
         <h2>WELCOME TO HALALAS UNIVERSITY</h2>
         <div class="input-group">
             <label for="email">Email</label>
@@ -39,11 +41,13 @@
         <div class="loginbtn-group">
             <button type="submit" class="login-btn">Login</button>
         </div>
+        </div>
     </div>
 
     <!-- Το Block του Dashboard -->
     <div class="sd-wrapper" id="studentDashboardBlock">
         <div class="sd-header">
+            <img src="imgs/halalas-university-logo.svg" alt="Halalas University Portal" class="sd-logo">
             <div>
                 <h2 id="sdStudentName">Φόρτωση...</h2>
                 <p>Αριθμός Μητρώου: <span id="sdStudentID">-</span></p>
@@ -120,7 +124,7 @@
                 } else {
                     //collectData
                     console.log(serverData);
-                    $(".login-container").fadeOut(500, () => {
+                    $(".login-wrapper").fadeOut(500, () => {
                         RenderloadingScreen("login");
                         fetch("https://uni-api.halalas-services.xyz/collect", {
                             headers: {

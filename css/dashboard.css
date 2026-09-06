@@ -18,6 +18,158 @@
         border: 0;
     }
 
+    .app-modal[hidden] {
+        display: none;
+    }
+
+    .app-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.18s ease, visibility 0.18s ease;
+    }
+
+    .app-modal.is-visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .app-modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.72);
+        backdrop-filter: blur(6px);
+    }
+
+    .app-modal-panel {
+        position: relative;
+        width: min(100%, 430px);
+        padding: 30px;
+        border: 1px solid rgba(94, 234, 212, 0.28);
+        border-radius: 18px;
+        background: linear-gradient(145deg, #10353a, var(--near-black-teal));
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+        transform: translateY(16px) scale(0.97);
+        transition: transform 0.22s ease;
+    }
+
+    .app-modal.is-visible .app-modal-panel {
+        transform: translateY(0) scale(1);
+    }
+
+    .app-modal-close {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        width: 32px;
+        height: 32px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--cool-gray);
+        font-size: 25px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .app-modal-close:hover,
+    .app-modal-close:focus-visible {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--white);
+        outline: none;
+    }
+
+    .app-modal-kicker {
+        margin-bottom: 9px;
+        color: var(--mint-teal);
+        font: 600 11px var(--font-data);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .app-modal-panel h2 {
+        margin-bottom: 10px;
+        color: var(--off-white);
+        font-size: 23px;
+    }
+
+    .app-modal-message {
+        color: var(--cool-gray);
+        font-size: 14px;
+        line-height: 1.55;
+    }
+
+    .app-modal-input-group {
+        margin-top: 20px;
+    }
+
+    .app-modal-input-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--off-white);
+        font-size: 13px;
+    }
+
+    .app-modal-input-group input {
+        width: 100%;
+        padding: 12px 13px;
+        border: 1px solid var(--cool-gray);
+        border-radius: 10px;
+        background: var(--panel-dark);
+        color: var(--off-white);
+        font: 15px var(--font-body);
+    }
+
+    .app-modal-input-group input:focus {
+        border-color: var(--mint-teal);
+        outline: none;
+        box-shadow: 0 0 14px rgba(94, 234, 212, 0.2);
+    }
+
+    .app-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 26px;
+    }
+
+    .app-modal-actions button {
+        padding: 10px 16px;
+        border-radius: 999px;
+        font: 600 13px var(--font-body);
+        cursor: pointer;
+    }
+
+    .app-modal-secondary {
+        border: 1px solid var(--border-subtle);
+        background: transparent;
+        color: var(--cool-gray);
+    }
+
+    .app-modal-primary {
+        border: 1px solid var(--mint-teal);
+        background: var(--mint-teal);
+        color: var(--near-black-teal);
+    }
+
+    .app-modal-actions button:hover,
+    .app-modal-actions button:focus-visible {
+        transform: translateY(-1px);
+        outline: 2px solid var(--mint-teal);
+        outline-offset: 2px;
+    }
+
+    @media (max-width: 520px) {
+        .app-modal-panel {
+            padding: 26px 22px;
+        }
+    }
+
     .sd-wrapper * {
         box-sizing: border-box;
     }
@@ -518,6 +670,11 @@
             align-items: flex-start;
             flex-direction: column;
             gap: 10px;
+        }
+
+        .sd-wrapper .sd-toolbar-actions {
+            width: 100%;
+            flex-wrap: wrap;
         }
 
         .sd-wrapper .sd-status-block {

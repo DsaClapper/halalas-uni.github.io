@@ -280,10 +280,15 @@
     async function preparePushNotifications() {
         if (!supportsPushNotifications()) return;
         updateNotificationToggle();
-        if (notificationSetupPromise) return notificationSetupPromise;
 
-        notificationSetupPromise = getPushSubscription().catch(() => null);
-        await notificationSetupPromise;
+        // Restore an existing opt-in silently, without requesting permission on page load.
+        if (
+            localStorage.getItem(notificationsEnabledKey) === "true" &&
+            Notification.permission === "granted"
+        ) {
+            notificationSetupPromise = getPushSubscription().catch(() => null);
+            await notificationSetupPromise;
+        }
     }
 
     async function unregisterPushWorker() {

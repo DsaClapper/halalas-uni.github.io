@@ -138,6 +138,23 @@
             </div>
         </div>
     </div>
+    <div class="app-modal" id="appModal" hidden>
+        <div class="app-modal-backdrop" data-modal-cancel></div>
+        <section class="app-modal-panel" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+            <button class="app-modal-close" type="button" aria-label="Κλείσιμο" data-modal-cancel>×</button>
+            <p class="app-modal-kicker">Halalas University</p>
+            <h2 id="appModalTitle"></h2>
+            <p class="app-modal-message" id="appModalMessage"></p>
+            <div class="app-modal-input-group" id="appModalInputGroup" hidden>
+                <label for="appModalInput">Κωδικός</label>
+                <input type="password" id="appModalInput" autocomplete="current-password" />
+            </div>
+            <div class="app-modal-actions">
+                <button class="app-modal-secondary" type="button" data-modal-cancel>Ακύρωση</button>
+                <button class="app-modal-primary" type="button" id="appModalConfirm">Συνέχεια</button>
+            </div>
+        </section>
+    </div>
 </body>
 <script>
     const authBaseUrl = "https://uni-api.halalas-services.xyz/auth";
@@ -148,6 +165,12 @@
     const loginStatus = document.getElementById("loginStatus");
     const notificationToggle = document.getElementById("notificationToggle");
     const notificationToggleInput = document.getElementById("notificationToggleInput");
+    const appModal = document.getElementById("appModal");
+    const appModalTitle = document.getElementById("appModalTitle");
+    const appModalMessage = document.getElementById("appModalMessage");
+    const appModalInputGroup = document.getElementById("appModalInputGroup");
+    const appModalInput = document.getElementById("appModalInput");
+    const appModalConfirm = document.getElementById("appModalConfirm");
 
     let loginAttempt = 0;
     let dashboardReady = false;
@@ -157,6 +180,45 @@
     let notificationSetupPromise = null;
     const notificationsBaseUrl = "https://uni-api.halalas-services.xyz/notifications";
     const notificationsEnabledKey = "halalasNotificationsEnabled";
+    let modalResolve = null;
+
+    function closeAppModal(result = null) {
+        if (!modalResolve) return;
+        const resolve = modalResolve;
+        modalResolve = null;
+        appModal.classList.remove("is-visible");
+        setTimeout(() => {
+            appModal.hidden = true;
+            appModalInput.value = "";
+        }, 180);
+        resolve(result);
+    }
+
+    function openAppModal({ title, message, confirmLabel = "Συνέχεια", input = false }) {
+        return new Promise((resolve) => {
+            modalResolve = resolve;
+            appModalTitle.textContent = title;
+            appModalMessage.textContent = message;
+            appModalConfirm.textContent = confirmLabel;
+            appModalInputGroup.hidden = !input;
+            appModal.hidden = false;
+            requestAnimationFrame(() => appModal.classList.add("is-visible"));
+            setTimeout(() => (input ? appModalInput : appModalConfirm).focus(), 80);
+        });
+    }
+
+    appModalConfirm.addEventListener("click", () => {
+        closeAppModal(appModalInputGroup.hidden ? true : appModalInput.value);
+    });
+    appModal.querySelectorAll("[data-modal-cancel]").forEach((element) => {
+        element.addEventListener("click", () => closeAppModal(null));
+    });
+    appModalInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") appModalConfirm.click();
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && modalResolve) closeAppModal(null);
+    });
 
     function supportsPushNotifications() {
         return "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
@@ -226,7 +288,12 @@
 
     async function setNotificationsEnabled(enabled) {
         if (enabled) {
-            const password = window.prompt("Εισάγετε ξανά τον κωδικό σας για να ενεργοποιήσετε τις ειδοποιήσεις:");
+            const password = await openAppModal({
+                title: "Ενεργοποίηση ειδοποιήσεων",
+                message: "Εισάγετε ξανά τον κωδικό σας για να αποθηκεύσουμε τη συναίνεσή σας για τις ειδοποιήσεις βαθμών.",
+                confirmLabel: "Ενεργοποίηση",
+                input: true,
+            });
             if (!password) {
                 notificationToggleInput.checked = false;
                 return;
@@ -373,7 +440,14 @@
         $(".login-wrapper").stop(true, true).fadeIn(250);
     }
 
-    document.getElementById("signOutBtn").addEventListener("click", () => {
+    document.getElementById("signOutBtn").addEventListener("click", async () => {
+        const shouldSignOut = await openAppModal({
+            title: "Έξοδος από τον λογαριασμό",
+            message: "Θέλετε να αποσυνδεθείτε από το Halalas University Portal;",
+            confirmLabel: "Sign out",
+        });
+        if (!shouldSignOut) return;
+
         loginAttempt++;
         dashboardReady = false;
         loaderRunId++;

@@ -9,10 +9,10 @@
     <title>Halalas University Portal</title>
     <link rel="icon" href="imgs/halalas-university-logo.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <script src="js/app-config.js" defer></script>
-    <link rel="stylesheet" type="text/css" href="css/main.css" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css" />
-    <link rel="stylesheet" type="text/css" href="css/loading.css" />
+    <script src="js/app-config.js?v=20260906" defer></script>
+    <link rel="stylesheet" type="text/css" href="css/main.css?v=20260906" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260906" />
+    <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260906" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Halalas University" />
@@ -240,7 +240,7 @@
             : await Notification.requestPermission();
         if (permission !== "granted") return null;
 
-        const registration = await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.register("/sw.js?v=20260906");
         let subscription = await registration.pushManager.getSubscription();
         if (!subscription) {
             const keyResponse = await fetch(`${notificationsBaseUrl}/vapid-public-key`, {
@@ -286,6 +286,15 @@
         await notificationSetupPromise;
     }
 
+    async function unregisterPushWorker() {
+        const registration = await navigator.serviceWorker.getRegistration("/");
+        if (!registration) return;
+
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) await subscription.unsubscribe();
+        await registration.unregister();
+    }
+
     async function setNotificationsEnabled(enabled) {
         if (enabled) {
             const password = await openAppModal({
@@ -324,6 +333,8 @@
                 method: "POST",
             });
             if (!response.ok) throw new Error("DISABLE_FAILED");
+            await unregisterPushWorker();
+            notificationSetupPromise = null;
             localStorage.removeItem(notificationsEnabledKey);
         } catch {
             notificationToggleInput.checked = true;

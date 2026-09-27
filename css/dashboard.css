@@ -637,6 +637,230 @@
         border-radius: 8px;
     }
 
+    /* ------------------------------------------------- Ιστορικό βαθμολογιών */
+    .sd-wrapper .sd-history-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sd-wrapper .sd-history-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .sd-wrapper .sd-history-filter {
+        max-width: 260px;
+        padding: 8px 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 999px;
+        background: var(--near-black-teal);
+        color: var(--pale-mint);
+        font: 12px var(--font-body);
+        cursor: pointer;
+    }
+
+    .sd-wrapper .sd-history-filter:focus-visible {
+        border-color: var(--mint-teal);
+        outline: 2px solid var(--mint-teal);
+        outline-offset: 2px;
+    }
+
+    .sd-wrapper .sd-history-filter:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    .sd-wrapper .sd-history-note {
+        margin-bottom: 16px;
+        padding: 10px 14px;
+        border: 1px solid var(--border-subtle);
+        border-left: 3px solid var(--mint-teal);
+        border-radius: 8px;
+        background: var(--near-black-teal);
+        color: var(--pale-mint);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .sd-wrapper .sd-history-note.is-error {
+        border-left-color: #ff8f8f;
+        color: #ffb7b7;
+    }
+
+    .sd-wrapper .sd-history-note[hidden] {
+        display: none;
+    }
+
+    /* Η κάθετη γραμμή του timeline ζωγραφίζεται στο container, ώστε να μην
+       προεξέχει κάτω από την τελευταία εγγραφή. */
+    .sd-wrapper .sd-history-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .sd-wrapper .sd-history-entry {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(150px, 190px) 1fr;
+        gap: 16px;
+        padding: 16px 18px 16px 30px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--panel-dark);
+    }
+
+    .sd-wrapper .sd-history-entry::before {
+        content: "";
+        position: absolute;
+        top: 22px;
+        left: 13px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--cool-gray);
+    }
+
+    .sd-wrapper .sd-history-entry.is-new::before {
+        background: var(--mint-teal);
+        box-shadow: 0 0 10px rgba(94, 234, 212, 0.65);
+    }
+
+    .sd-wrapper .sd-history-entry.is-changed::before {
+        background: #ffc46b;
+        box-shadow: 0 0 10px rgba(255, 196, 107, 0.5);
+    }
+
+    .sd-wrapper .sd-history-when {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .sd-wrapper .sd-history-when time {
+        color: var(--pale-mint);
+        font: 12px var(--font-data);
+    }
+
+    .sd-wrapper .sd-history-badge {
+        padding: 3px 9px;
+        border: 1px solid var(--cool-gray);
+        border-radius: 999px;
+        color: var(--cool-gray);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .sd-wrapper .sd-history-entry.is-new .sd-history-badge {
+        border-color: var(--mint-teal);
+        color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-history-entry.is-changed .sd-history-badge {
+        border-color: #ffc46b;
+        color: #ffc46b;
+    }
+
+    .sd-wrapper .sd-history-body {
+        min-width: 0;
+    }
+
+    .sd-wrapper .sd-history-course {
+        color: var(--off-white);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .sd-wrapper .sd-history-grades {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        font-family: var(--font-data);
+    }
+
+    .sd-wrapper .sd-history-grade {
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: var(--near-black-teal);
+        color: var(--pale-mint);
+        font-size: 15px;
+        font-weight: bold;
+    }
+
+    .sd-wrapper .sd-history-grades.is-passed .sd-history-grade {
+        color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-history-grades.is-failed .sd-history-grade {
+        color: #ffb7b7;
+    }
+
+    .sd-wrapper .sd-history-from {
+        color: var(--cool-gray);
+        font-size: 13px;
+        text-decoration: line-through;
+    }
+
+    .sd-wrapper .sd-history-arrow {
+        color: var(--cool-gray);
+        font-size: 13px;
+    }
+
+    .sd-wrapper .sd-history-link {
+        margin-top: 12px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--mint-teal);
+        font: 600 12px var(--font-body);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+    }
+
+    .sd-wrapper .sd-history-link:hover,
+    .sd-wrapper .sd-history-link:focus-visible {
+        color: var(--pale-mint);
+        outline: none;
+    }
+
+    @media (max-width: 600px) {
+        .sd-wrapper .sd-history-entry {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .sd-wrapper .sd-history-when {
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sd-wrapper .sd-history-actions {
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .sd-wrapper .sd-history-filter {
+            max-width: none;
+            flex: 1 1 100%;
+        }
+    }
+
     @media (max-width: 480px) {
         .sd-wrapper .sd-header {
             min-height: 120px;

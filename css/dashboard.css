@@ -638,6 +638,13 @@
     }
 
     /* ------------------------------------------------- Ιστορικό βαθμολογιών */
+    /* Collapses with the panel: the 0fr row only shrinks a child that is
+       allowed to go below its content height. */
+    .sd-wrapper .sd-history-panel-inner {
+        min-height: 0;
+        overflow: hidden;
+    }
+
     .sd-wrapper .sd-history-bar {
         display: flex;
         align-items: center;
@@ -734,6 +741,12 @@
         box-shadow: 0 0 10px rgba(94, 234, 212, 0.65);
     }
 
+    .sd-wrapper .sd-history-entry.is-retake::before {
+        background: var(--pale-mint);
+        box-shadow: 0 0 10px rgba(167, 243, 208, 0.5);
+    }
+
+    .sd-wrapper .sd-history-entry.is-corrected::before,
     .sd-wrapper .sd-history-entry.is-changed::before {
         background: #ffc46b;
         box-shadow: 0 0 10px rgba(255, 196, 107, 0.5);
@@ -768,6 +781,18 @@
         color: var(--mint-teal);
     }
 
+    .sd-wrapper .sd-history-entry.is-retake .sd-history-badge {
+        border-color: var(--pale-mint);
+        color: var(--pale-mint);
+    }
+
+    .sd-wrapper .sd-history-previous {
+        margin-top: 8px;
+        color: var(--cool-gray);
+        font: 11px var(--font-data);
+    }
+
+    .sd-wrapper .sd-history-entry.is-corrected .sd-history-badge,
     .sd-wrapper .sd-history-entry.is-changed .sd-history-badge {
         border-color: #ffc46b;
         color: #ffc46b;

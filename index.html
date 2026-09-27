@@ -110,6 +110,11 @@
                     <span class="sd-category-chevron" aria-hidden="true">⌄</span>
                 </button>
                 <div class="sd-category-content" id="sdHistoryPanel">
+                    <!-- Single wrapper on purpose: the collapse animation sets
+                         grid-template-rows: 0fr on the panel, which only sizes
+                         the first row — any further children land in implicit
+                         auto rows and keep their full height while closed. -->
+                    <div class="sd-history-panel-inner">
                     <div class="sd-history-bar">
                         <label class="sd-notification-toggle" id="historyToggle">
                             <span>Καταγραφή ιστορικού</span>
@@ -128,6 +133,7 @@
                     <p class="sd-history-note" id="historyNote" role="status" aria-live="polite" hidden></p>
                     <div class="sd-history-timeline" id="sdHistoryTimeline">
                         <!-- Οι εγγραφές φορτώνονται μέσω JS -->
+                    </div>
                     </div>
                 </div>
             </section>
@@ -784,10 +790,15 @@
     let historyEntries = [];
     let historyEnabled = false;
 
+    // A result is identified by (course, exam period): sitting a course again is
+    // a new attempt even when the mark is identical, and only a revision inside
+    // the *same* period is the registry correcting itself.
     const HISTORY_TYPE_LABELS = {
         baseline: "Αρχική καταγραφή",
         new: "Νέος βαθμός",
-        changed: "Αλλαγή βαθμού",
+        retake: "Επανεξέταση",
+        corrected: "Διόρθωση",
+        changed: "Αλλαγή βαθμού", // ιστορικές εγγραφές πριν τον διαχωρισμό
     };
 
     function escapeHtml(value) {
@@ -871,12 +882,23 @@
         historyTimeline.innerHTML = visible
             .map((entry) => {
                 const typeLabel = HISTORY_TYPE_LABELS[entry.type] || entry.type;
+                const hasPrevious = entry.from !== null && entry.from !== undefined;
+                // Only a correction genuinely replaces an earlier mark, so only
+                // it gets the struck-through "was". A re-sit stands on its own
+                // and carries the previous sitting as a footnote instead.
                 const gradeText =
-                    entry.type === "changed" && entry.from !== null && entry.from !== undefined
+                    hasPrevious && (entry.type === "corrected" || entry.type === "changed")
                         ? `<span class="sd-history-from">${escapeHtml(entry.from)}</span>
                            <span class="sd-history-arrow" aria-hidden="true">→</span>
                            <span class="sd-history-grade">${escapeHtml(entry.grade)}</span>`
                         : `<span class="sd-history-grade">${escapeHtml(entry.grade)}</span>`;
+
+                const previousNote =
+                    entry.type === "retake" && hasPrevious
+                        ? `<div class="sd-history-previous">Προηγούμενη προσπάθεια: ${escapeHtml(entry.from)}${
+                              entry.fromExamPeriod ? ` (${escapeHtml(entry.fromExamPeriod)})` : ""
+                          }</div>`
+                        : "";
 
                 const meta = [
                     entry.examPeriod ? `Εξεταστική: ${entry.examPeriod}` : "",
@@ -898,6 +920,7 @@
                             <div class="sd-history-grades ${entry.isPassed ? "is-passed" : "is-failed"}">
                                 ${gradeText}
                             </div>
+                            ${previousNote}
                             ${meta.length
                                 ? `<div class="sd-course-meta">${meta
                                       .map((item) => `<span>${escapeHtml(item)}</span>`)

@@ -10,8 +10,15 @@
     <link rel="icon" href="imgs/halalas-university-logo.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <script src="js/app-config.js?v=20260926" defer></script>
+    <!-- ΣΗΜΑΝΤΙΚΟ: αυτό το ?v= είναι το μόνο που κάνει τον browser να
+         ξανακατεβάσει ένα φύλλο στυλ. Το GitHub Pages στέλνει
+         cache-control: max-age=14400, οπότε χωρίς αλλαγή εδώ το παλιό CSS
+         μένει μέχρι 4 ώρες — και επειδή το index.html ΔΕΝ είναι versioned,
+         ο browser παίρνει νέο HTML πάνω σε παλιό CSS: νέα στοιχεία χωρίς
+         κανόνες, δηλαδή σπασμένη σελίδα.
+         Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260926" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260926" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260929" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -130,7 +137,7 @@
                     <div class="sd-history-panel-inner">
                         <div class="sd-history-bar">
                             <label class="sd-notification-toggle" id="assignmentsShowDone">
-                                <span>Δείξε και τα παραδομένα</span>
+                                <span>Δείξε παραδομένα και παλιά</span>
                                 <input type="checkbox" id="assignmentsShowDoneInput" />
                                 <span class="sd-toggle-track" aria-hidden="true"><span></span></span>
                             </label>
@@ -590,7 +597,13 @@
                 : graded.reduce((sum, c) => sum + Number(c.grade), 0) / graded.length;
         }
 
-        const pending = Array.isArray(data.assignments) ? data.assignments.filter((a) => !a.submitted).length : null;
+        // Ίδιος ορισμός με τον μετρητή δίπλα στις «Εκκρεμότητες» — δύο νούμερα
+        // που λένε το ίδιο πράγμα πρέπει να συμφωνούν, αλλιώς το ένα από τα δύο
+        // είναι ψέμα.
+        const now = Date.now();
+        const pending = Array.isArray(data.assignments)
+            ? data.assignments.filter((a) => !a.submitted && !isStale(a, now)).length
+            : null;
 
         return {
             average,
@@ -1035,11 +1048,32 @@
         { key: "week", label: "Αυτή την εβδομάδα" },
         { key: "later", label: "Αργότερα" },
         { key: "undated", label: "Χωρίς προθεσμία" },
+        { key: "stale", label: "Πέρασαν πριν καιρό" },
         { key: "done", label: "Παραδομένες" },
     ];
 
+    // Μια προθεσμία που πέρασε χθες είναι επείγουσα. Μια που πέρασε πριν έναν
+    // μήνα δεν είναι — δεν υπάρχει τίποτα να κάνεις πια, και το να κάθεται
+    // κόκκινη στην κορυφή κάθε μέρα εκπαιδεύει το μάτι να αγνοεί το κόκκινο.
+    // Πάνω από αυτό το όριο βγαίνει από τον μετρητή και από τις επείγουσες,
+    // αλλά δεν σβήνεται: φαίνεται με τον διακόπτη «Δείξε παραδομένα και παλιά».
+    const STALE_AFTER_MS = 14 * 24 * 60 * 60 * 1000;
+
+    function isStale(assignment, now) {
+        if (assignment.submitted || !assignment.dueAt) return false;
+        const due = new Date(assignment.dueAt).getTime();
+        return !Number.isNaN(due) && now - due > STALE_AFTER_MS;
+    }
+
+    // Ό,τι μετράει σαν πραγματική εκκρεμότητα: αν είναι στον μετρητή, πρέπει
+    // να μπορείς να κάνεις κάτι γι' αυτό.
+    function activePending(now = Date.now()) {
+        return assignmentEntries.filter((entry) => !entry.submitted && !isStale(entry, now));
+    }
+
     function groupFor(assignment, now) {
         if (assignment.submitted) return "done";
+        if (isStale(assignment, now)) return "stale";
         if (!assignment.dueAt) return "undated";
 
         const due = new Date(assignment.dueAt).getTime();
@@ -1051,7 +1085,8 @@
     }
 
     function renderAssignmentsBadge() {
-        const pending = assignmentEntries.filter((entry) => !entry.submitted);
+        const now = Date.now();
+        const pending = activePending(now);
         if (!assignmentsAvailable || pending.length === 0) {
             assignmentsBadge.hidden = true;
             return;
@@ -1062,9 +1097,7 @@
         // Κόκκινο μόνο όταν κάτι έχει όντως λήξει ή λήγει μέσα σε 24 ώρες —
         // αλλιώς το σήμα είναι μονίμως κόκκινο και σταματά να σημαίνει κάτι.
         const urgent = pending.some(
-            (entry) =>
-                entry.overdue ||
-                (entry.dueAt && new Date(entry.dueAt).getTime() - Date.now() <= DAY_MS),
+            (entry) => entry.overdue || (entry.dueAt && new Date(entry.dueAt).getTime() - now <= DAY_MS),
         );
         assignmentsBadge.classList.toggle("is-urgent", urgent);
         assignmentsBadge.title = urgent ? "Υπάρχει προθεσμία που λήγει ή έληξε" : "Εκκρεμότητες";
@@ -1080,19 +1113,22 @@
             return;
         }
 
-        const showDone = assignmentsShowDoneInput.checked;
-        const visible = showDone ? assignmentEntries : assignmentEntries.filter((entry) => !entry.submitted);
+        const now = Date.now();
+        // Ο ίδιος διακόπτης δείχνει και τα παραδομένα και τα πολύ παλιά: και
+        // τα δύο είναι «τελειωμένα, αν τα ψάχνεις είναι εδώ».
+        const showAll = assignmentsShowDoneInput.checked;
+        const visible = showAll
+            ? assignmentEntries
+            : assignmentEntries.filter((entry) => !entry.submitted && !isStale(entry, now));
 
         if (visible.length === 0) {
             assignmentsList.innerHTML = `<div class="sd-no-grades">${
                 assignmentEntries.length === 0
                     ? "Δεν βρέθηκαν εργασίες με προθεσμία στο Moodle."
-                    : "Καμία εκκρεμότητα — όλα παραδομένα."
+                    : "Καμία εκκρεμότητα — όλα τακτοποιημένα."
             }</div>`;
             return;
         }
-
-        const now = Date.now();
         const buckets = new Map(ASSIGNMENT_GROUPS.map((group) => [group.key, []]));
         visible.forEach((entry) => buckets.get(groupFor(entry, now)).push(entry));
 

@@ -911,12 +911,23 @@
         box-shadow: 0 0 10px rgba(94, 234, 212, 0.45);
     }
 
-    .sd-wrapper .sd-assignment.is-done {
+    .sd-wrapper .sd-assignment.is-done,
+    .sd-wrapper .sd-assignment.is-stale {
         opacity: 0.6;
     }
 
     .sd-wrapper .sd-assignment.is-done::before {
         background: var(--pale-mint);
+    }
+
+    /* Γκρι, όχι κόκκινο: πέρασε, δεν προλαβαίνεις, και δεν υπάρχει λόγος να
+       τραβάει το μάτι κάθε φορά που ανοίγεις τη σελίδα. */
+    .sd-wrapper .sd-assignment.is-stale::before {
+        background: var(--cool-gray);
+    }
+
+    .sd-wrapper .sd-assignment.is-stale .sd-assignment-relative {
+        color: var(--cool-gray);
     }
 
     .sd-wrapper .sd-assignment-main {

@@ -1,6 +1,20 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
 
 :root {
+    /* Οι ζώνες που δεν ανήκουν στη σελίδα: status bar και εγκοπή πάνω, home
+       indicator κάτω, στρογγυλεμένες γωνίες στα πλάγια. Με το
+       `viewport-fit=cover` η σελίδα απλώνεται από κάτω τους, οπότε πρέπει να
+       τις αποφύγουμε εμείς.
+
+       Περνάνε από μεταβλητές αντί να γράφεται το env() σε κάθε σημείο, για
+       έναν πρακτικό λόγο: το env() δεν προσομοιώνεται σε headless browser, ενώ
+       μια μεταβλητή αλλάζει σε μία γραμμή — οπότε μπορεί να ελεγχθεί ότι η
+       διάταξη όντως υποχωρεί, αντί να το υποθέτουμε. */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+
     --mint-teal: #5eead4;
     --deep-teal: #0f5c5c;
     --near-black-teal: #081c24;
@@ -38,11 +52,19 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
+    /* Το viewport-fit=cover βγάζει τη σελίδα κάτω από τη status bar και την
+       εγκοπή, άρα η οθόνη σύνδεσης χρειάζεται κι αυτή τα inset — χωρίς τους,
+       η φόρμα μπορεί να ξεκινά πίσω από την ώρα σε συσκευές με εγκοπή. */
+    padding: calc(20px + var(--safe-top))
+             calc(20px + var(--safe-right))
+             calc(20px + var(--safe-bottom))
+             calc(20px + var(--safe-left));
     overflow: hidden;
     /* Εξασφαλίζει ότι το πλαίσιο δεν κολλάει στις άκρες της οθόνης στα κινητά */
 }
 
+/* Στο dashboard τα inset τα χειρίζονται η κεφαλίδα και η μπάρα ξεχωριστά:
+   εκεί το χρώμα πρέπει να φτάνει ως την άκρη, μόνο το κείμενο μαζεύεται. */
 body.dashboard-mode {
     padding: 0;
     align-items: stretch;

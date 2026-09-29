@@ -179,10 +179,20 @@
     }
 
     /* Header - Στοιχισμένο ΠΑΝΩ ΔΕΞΙΑ */
+    /*
+       Το viewport-fit=cover απλώνει τη σελίδα κάτω από τη status bar και την
+       εγκοπή, οπότε η απόσταση από την κορυφή πρέπει να μπει εδώ — αλλιώς το
+       όνομα του φοιτητή κάθεται πίσω από την ώρα και τη μπαταρία.
+       Τα αριστερά/δεξιά inset μετράνε στο οριζόντιο, όπου η εγκοπή τρώει τη
+       μία πλευρά.
+    */
     .sd-wrapper .sd-header {
         background: linear-gradient(180deg, var(--mint-teal), var(--deep-teal));
         color: var(--off-white);
-        padding: 20px 30px;
+        padding: calc(20px + var(--safe-top))
+                 calc(30px + var(--safe-right))
+                 20px
+                 calc(30px + var(--safe-left));
         display: flex;
         justify-content: flex-end; /* Σπρώχνει το περιεχόμενο τέρμα δεξιά */
         align-items: center;
@@ -194,9 +204,14 @@
     }
 
     /* Μόλις αρχίσει το scroll η κεφαλίδα μαζεύεται: το λογότυπο έχει ήδη πει
-       ό,τι είχε να πει, και ο χώρος αξίζει περισσότερο στους βαθμούς. */
+       ό,τι είχε να πει, και ο χώρος αξίζει περισσότερο στους βαθμούς. Το
+       inset της κορυφής ΔΕΝ μαζεύεται μαζί — η status bar είναι εκεί όσο
+       ψηλά κι αν φτάσει το scroll. */
     body.is-scrolled .sd-wrapper .sd-header {
-        padding: 8px 30px;
+        padding: calc(8px + var(--safe-top))
+                 calc(30px + var(--safe-right))
+                 8px
+                 calc(30px + var(--safe-left));
     }
 
     .sd-wrapper .sd-logo {
@@ -535,9 +550,9 @@
            indicator σε iPhone· χωρίς αυτό η μπάρα κάθεται από πάνω της. */
         .sd-wrapper .sd-tabs {
             position: absolute;
-            left: 14px;
-            right: 14px;
-            bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+            left: calc(14px + var(--safe-left));
+            right: calc(14px + var(--safe-right));
+            bottom: calc(14px + var(--safe-bottom));
             z-index: 20;
             gap: 2px;
             padding: 4px;
@@ -562,7 +577,7 @@
         /* Χώρος ώστε η τελευταία γραμμή να μπορεί να κυλήσει πάνω από τη
            μπάρα — αλλιώς κρύβεται από κάτω της και δεν φαίνεται ποτέ. */
         .sd-wrapper .sd-content {
-            padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: calc(96px + var(--safe-bottom));
         }
 
         /* Το ενεργό tab γεμίζει αντί να υπογραμμίζεται: μέσα σε στρογγυλό
@@ -1485,14 +1500,24 @@
     @media (max-width: 480px) {
         .sd-wrapper .sd-header {
             /* Ήταν 120px — δηλαδή το 14% μιας οθόνης κινητού πήγαινε σε ένα
-               λογότυπο, πριν φανεί τίποτα χρήσιμο. */
-            min-height: 74px;
-            padding: 10px 16px;
+               λογότυπο, πριν φανεί τίποτα χρήσιμο.
+
+               Το inset μπαίνει και στο min-height, όχι μόνο στο padding:
+               αλλιώς τα 74px μετράνε ΜΑΖΙ με τη ζώνη της status bar και το
+               ορατό κομμάτι της κεφαλίδας βγαίνει τόσο πιο κοντό. */
+            min-height: calc(74px + var(--safe-top));
+            padding: calc(10px + var(--safe-top))
+                     calc(16px + var(--safe-right))
+                     10px
+                     calc(16px + var(--safe-left));
         }
 
         body.is-scrolled .sd-wrapper .sd-header {
-            min-height: 54px;
-            padding: 6px 16px;
+            min-height: calc(54px + var(--safe-top));
+            padding: calc(6px + var(--safe-top))
+                     calc(16px + var(--safe-right))
+                     6px
+                     calc(16px + var(--safe-left));
         }
 
         .sd-wrapper .sd-logo {

@@ -443,6 +443,15 @@
         background: var(--panel-dark);
     }
 
+    /* Η μπάρα κόβεται από τη ροή και κρέμεται πάνω από το περιεχόμενο, οπότε
+       το .sd-wrapper γίνεται το σημείο αναφοράς της. Απόλυτη και όχι σταθερή
+       θέση: το wrapper είναι ήδη 100dvh, άρα «κάτω» σημαίνει το ίδιο πράγμα,
+       και έτσι δεν εξαρτιόμαστε από το πώς κάθε κινητό χειρίζεται τα fixed
+       στοιχεία όταν εμφανίζεται το πληκτρολόγιο. */
+    .sd-wrapper {
+        position: relative;
+    }
+
     /* Σε desktop η μπάρα ανεβαίνει πάνω από το περιεχόμενο — `order`, ώστε να
        μη χρειάζεται δεύτερο markup για την ίδια navigation. */
     @media (min-width: 601px) {
@@ -516,11 +525,59 @@
        εικονίδιο ανεβαίνει από πάνω: το κελί είναι στενό, και σε στοιβαγμένη
        διάταξη η μπάρα αναγνωρίζεται με την άκρη του ματιού χωρίς διάβασμα. */
     @media (max-width: 600px) {
+        /* Νησί που αιωρείται πάνω από το περιεχόμενο, αντί για μπάρα
+           κολλημένη στην άκρη. Τρία πράγματα το κάνουν να «πετάει»: τα
+           περιθώρια που το ξεκολλούν από τις γωνίες, η σκιά που το σηκώνει,
+           και το ημιδιάφανο φόντο που αφήνει το περιεχόμενο να περνάει από
+           κάτω αντί να σταματάει σε μια γραμμή.
+
+           Το safe-area-inset κρατάει την απόσταση από τη γραμμή του home
+           indicator σε iPhone· χωρίς αυτό η μπάρα κάθεται από πάνω της. */
+        .sd-wrapper .sd-tabs {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+            z-index: 20;
+            gap: 2px;
+            padding: 4px;
+            border: 1px solid rgba(94, 234, 212, 0.18);
+            border-top: 1px solid rgba(94, 234, 212, 0.18);
+            border-radius: 20px;
+            background: rgba(14, 42, 50, 0.82);
+            box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Το θόλωμα μπαίνει μόνο όπου υποστηρίζεται. Χωρίς τον έλεγχο, ένας
+           browser που το αγνοεί θα άφηνε ημιδιάφανο φόντο χωρίς blur, που
+           κάνει το κείμενο από κάτω να διαβάζεται μέσα από τη μπάρα. */
+        @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+            .sd-wrapper .sd-tabs {
+                background: rgba(14, 42, 50, 0.62);
+                -webkit-backdrop-filter: blur(18px) saturate(150%);
+                backdrop-filter: blur(18px) saturate(150%);
+            }
+        }
+
+        /* Χώρος ώστε η τελευταία γραμμή να μπορεί να κυλήσει πάνω από τη
+           μπάρα — αλλιώς κρύβεται από κάτω της και δεν φαίνεται ποτέ. */
+        .sd-wrapper .sd-content {
+            padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+        }
+
+        /* Το ενεργό tab γεμίζει αντί να υπογραμμίζεται: μέσα σε στρογγυλό
+           νησί μια ευθεία γραμμή στον πάτο δεν έχει πού να ακουμπήσει. */
         .sd-wrapper .sd-tab {
             flex-direction: column;
             gap: 4px;
             padding: 9px 6px;
             font-size: 11px;
+            border-bottom: 0;
+            border-radius: 16px;
+        }
+
+        .sd-wrapper .sd-tab.is-active {
+            background: rgba(94, 234, 212, 0.12);
         }
 
         .sd-wrapper .sd-tab-icon {

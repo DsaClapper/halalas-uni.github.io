@@ -3,9 +3,16 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <!-- Ένα viewport, όχι τρία. Υπήρχαν τρία meta tags με διαφορετικό
+         περιεχόμενο· ποιο κερδίζει εξαρτάται από τον browser, δηλαδή ήταν
+         τύχη. Κρατήθηκε η πρόθεση του τελευταίου (χωρίς zoom).
+
+         Το `viewport-fit=cover` προστέθηκε επειδή χωρίς αυτό τα
+         `env(safe-area-inset-*)` είναι πάντα μηδέν — και σε iPhone, με την
+         εφαρμογή εγκατεστημένη στην αρχική οθόνη, η κάτω μπάρα κάθεται πάνω
+         στη γραμμή του home indicator. -->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" />
     <title>Halalas University Portal</title>
     <link rel="icon" href="imgs/halalas-university-logo.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -18,7 +25,7 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260926" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930b" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930c" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />

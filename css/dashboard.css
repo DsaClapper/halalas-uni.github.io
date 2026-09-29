@@ -434,6 +434,83 @@
         text-transform: uppercase;
     }
 
+    /* ---------------------------------------------------------------- Tabs */
+
+    .sd-wrapper .sd-tabs {
+        display: flex;
+        flex: none;
+        border-top: 1px solid var(--border-subtle);
+        background: var(--panel-dark);
+    }
+
+    /* Σε desktop η μπάρα ανεβαίνει πάνω από το περιεχόμενο — `order`, ώστε να
+       μη χρειάζεται δεύτερο markup για την ίδια navigation. */
+    @media (min-width: 601px) {
+        /* Η κεφαλίδα παίρνει κι αυτή order, αλλιώς τα tabs με -1 προσπερνούν
+           και αυτήν και καταλήγουν στην κορυφή της σελίδας. */
+        .sd-wrapper .sd-header {
+            order: -2;
+        }
+
+        .sd-wrapper .sd-tabs {
+            order: -1;
+            border-top: 0;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 20px;
+            gap: 4px;
+        }
+    }
+
+    .sd-wrapper .sd-tab {
+        flex: 1 1 0;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 10px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: var(--cool-gray);
+        font: 600 14px var(--font-heading);
+        cursor: pointer;
+        transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .sd-wrapper .sd-tab:hover {
+        color: var(--pale-mint);
+    }
+
+    .sd-wrapper .sd-tab.is-active {
+        color: var(--mint-teal);
+        border-bottom-color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-tab:focus-visible {
+        outline: 2px solid var(--mint-teal);
+        outline-offset: -2px;
+    }
+
+    @media (min-width: 601px) {
+        .sd-wrapper .sd-tabs {
+            justify-content: flex-start;
+        }
+
+        .sd-wrapper .sd-tab {
+            flex: 0 0 auto;
+            padding: 14px 22px;
+        }
+    }
+
+    .sd-wrapper .sd-tabpanel[hidden] {
+        display: none;
+    }
+
+    .sd-wrapper .sd-tabpanel {
+        padding: 0 20px 28px;
+    }
+
     /* Επεξηγηματική γραμμή στην κορυφή μιας ενότητας. */
     .sd-wrapper .sd-section-note {
         margin: 0 0 18px;
@@ -618,15 +695,11 @@
         opacity: 1;
     }
 
-    .sd-wrapper .sd-category-content > .sd-courses-grid {
-        min-height: 0;
-        overflow: hidden;
-    }
-
+    /* Το grid των καρτών μετακόμισε στο .sd-courses-row: το .sd-courses-grid
+       περιέχει πλέον και επικεφαλίδες ομάδων, που δεν είναι κάρτες και δεν
+       πρέπει να μπαίνουν σε στήλη δίπλα τους. */
     .sd-wrapper .sd-courses-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
+        display: block;
     }
 
     /* Κάρτα Μαθήματος (Βάση) */
@@ -694,6 +767,15 @@
         color: var(--mint-teal);
     }
 
+    /* Οι δύο πηγές στη σειρά, ίδιου πλάτους: η σύγκριση είναι ο λόγος που
+       κάθονται μαζί, και άνισα κουτιά θα υπονοούσαν ιεραρχία που δεν ισχύει
+       οπτικά — η ιεραρχία λέγεται με τις λέξεις «Επίσημος» και «Moodle». */
+    .sd-wrapper .sd-grade-pair {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 8px;
+    }
+
     .sd-wrapper .sd-overall-grade {
         background-color: var(--near-black-teal);
         color: var(--pale-mint);
@@ -706,6 +788,37 @@
         align-items: baseline;
         gap: 10px;
         font-size: 15px;
+    }
+
+    .sd-wrapper .sd-overall-grade.is-empty span:last-child {
+        color: var(--cool-gray);
+        font-weight: 500;
+    }
+
+    .sd-wrapper .sd-grades-group-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0 14px;
+        color: var(--pale-mint);
+        font: 600 13px var(--font-heading);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .sd-wrapper .sd-grades-group-title:not(:first-child) {
+        margin-top: 26px;
+    }
+
+    .sd-wrapper .sd-courses-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 18px;
+    }
+
+    .sd-wrapper .sd-course-status.is-running {
+        border-color: #ffc46b;
+        color: #ffc46b;
     }
 
     /* "Χωρίς βαθμό ακόμα" είναι πρόταση, όχι αριθμός: μικρότερο και σβηστό,

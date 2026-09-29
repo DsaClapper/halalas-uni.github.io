@@ -18,7 +18,7 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260926" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260929" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -117,112 +117,85 @@
                 </div>
             </div>
 
-            <!-- Πρώτο και ανοιχτό εξ ορισμού: είναι το μόνο κομμάτι της σελίδας
-                 που λήγει. Η λίστα μαθημάτων από κάτω δεν αλλάζει μέσα στο
-                 εξάμηνο, οπότε δεν χάνει τίποτα αν ξεκινά κλειστή. -->
-            <section class="sd-category is-open">
-                <button class="sd-category-toggle" type="button" aria-expanded="true" aria-controls="sdAssignmentsPanel">
-                    <span>
-                        Εκκρεμότητες
-                        <!-- Ο αριθμός μένει ορατός και με κλειστό το section —
-                             αλλιώς μια προθεσμία θα κρυβόταν πίσω από ένα κλικ. -->
-                        <span class="sd-pending-badge" id="assignmentsBadge" hidden></span>
-                    </span>
-                    <span class="sd-category-chevron" aria-hidden="true">⌄</span>
-                </button>
-                <div class="sd-category-content" id="sdAssignmentsPanel">
-                    <!-- Ένα wrapper, για τον ίδιο λόγο που το έχει και το
-                         ιστορικό: το grid-template-rows: 0fr του κλεισίματος
-                         διαστασιολογεί μόνο την πρώτη γραμμή. -->
-                    <div class="sd-history-panel-inner">
-                        <div class="sd-history-bar">
-                            <label class="sd-notification-toggle" id="assignmentsShowDone">
-                                <span>Δείξε παραδομένα και παλιά</span>
-                                <input type="checkbox" id="assignmentsShowDoneInput" />
-                                <span class="sd-toggle-track" aria-hidden="true"><span></span></span>
-                            </label>
-                            <div class="sd-history-actions">
-                                <button class="sd-refresh-btn" id="assignmentsRefreshBtn" type="button">
-                                    Ανανέωση
-                                </button>
-                            </div>
-                        </div>
-                        <p class="sd-history-note" id="assignmentsNote" role="status" aria-live="polite" hidden></p>
-                        <div class="sd-assignments-list" id="sdAssignmentsList">
-                            <!-- Οι εκκρεμότητες φορτώνονται μέσω JS -->
-                        </div>
+            <!-- Τρία panels, όχι τέσσερα. Οι δύο πηγές βαθμών ήταν ξεχωριστές
+                 ενότητες, που ήταν μέρος του προβλήματος: το Moodle δεν είναι
+                 ισότιμη πηγή με το eduportal, είναι δεύτερη ανάγνωση του ίδιου
+                 μαθήματος. Ενωμένες σε μία κάρτα, η σύγκριση παύει να είναι
+                 θέμα διάταξης. -->
+            <section class="sd-tabpanel is-active" id="tabAssignments" role="tabpanel" aria-labelledby="tabBtnAssignments">
+                <div class="sd-history-bar">
+                    <label class="sd-notification-toggle" id="assignmentsShowDone">
+                        <span>Δείξε παραδομένα και παλιά</span>
+                        <input type="checkbox" id="assignmentsShowDoneInput" />
+                        <span class="sd-toggle-track" aria-hidden="true"><span></span></span>
+                    </label>
+                    <div class="sd-history-actions">
+                        <button class="sd-refresh-btn" id="assignmentsRefreshBtn" type="button">
+                            Ανανέωση
+                        </button>
                     </div>
+                </div>
+                <p class="sd-history-note" id="assignmentsNote" role="status" aria-live="polite" hidden></p>
+                <div class="sd-assignments-list" id="sdAssignmentsList">
+                    <!-- Οι εκκρεμότητες φορτώνονται μέσω JS -->
                 </div>
             </section>
 
-            <section class="sd-category">
-                <button class="sd-category-toggle" type="button" aria-expanded="false" aria-controls="sdCoursesPanel">
-                    <span>Τα Μαθήματά μου</span>
-                    <span class="sd-category-chevron" aria-hidden="true">⌄</span>
-                </button>
-                <div class="sd-category-content" id="sdCoursesPanel">
-                    <div class="sd-courses-panel-inner">
-                        <!-- Χωρίς αυτή τη γραμμή, δύο ενότητες δείχνουν
-                             διαφορετικό αριθμό για το ίδιο μάθημα και τίποτα
-                             δεν εξηγεί ποιος μετράει. -->
-                        <p class="sd-section-note">
-                            Οι βαθμοί εδώ είναι από το <strong>elearn (Moodle)</strong> — τους συντηρεί ο κάθε
-                            διδάσκων και αλλάζουν μέσα στο εξάμηνο. Ο βαθμός που μετράει είναι στους
-                            <strong>Επίσημους Βαθμούς</strong>.
-                        </p>
-                        <div class="sd-courses-grid" id="sdCoursesGrid">
-                            <!-- Οι κάρτες φορτώνονται μέσω JS -->
-                        </div>
-                    </div>
+            <section class="sd-tabpanel" id="tabGrades" role="tabpanel" aria-labelledby="tabBtnGrades" hidden>
+                <p class="sd-section-note">
+                    Ο βαθμός που μετράει είναι ο <strong>επίσημος</strong>, από το eduportal. Όπου υπάρχει και
+                    βαθμός από το <strong>elearn (Moodle)</strong> φαίνεται δίπλα του — τον συντηρεί ο διδάσκων
+                    και αλλάζει μέσα στο εξάμηνο, οπότε οι δύο αριθμοί συχνά διαφέρουν.
+                </p>
+                <div class="sd-courses-grid" id="sdGradesGrid">
+                    <!-- Οι κάρτες φορτώνονται μέσω JS -->
                 </div>
             </section>
 
-            <section class="sd-category">
-                <button class="sd-category-toggle" type="button" aria-expanded="false" aria-controls="sdEduportalPanel">
-                    <span>Επίσημοι Βαθμοί (eduportal)</span>
-                    <span class="sd-category-chevron" aria-hidden="true">⌄</span>
-                </button>
-                <div class="sd-category-content" id="sdEduportalPanel">
-                    <div class="sd-courses-grid" id="sdEduportalGrid">
-                        <!-- Οι κάρτες φορτώνονται μέσω JS -->
+            <section class="sd-tabpanel" id="tabHistory" role="tabpanel" aria-labelledby="tabBtnHistory" hidden>
+                <div class="sd-history-bar">
+                    <label class="sd-notification-toggle" id="historyToggle">
+                        <span>Καταγραφή ιστορικού</span>
+                        <input type="checkbox" id="historyToggleInput" />
+                        <span class="sd-toggle-track" aria-hidden="true"><span></span></span>
+                    </label>
+                    <div class="sd-history-actions">
+                        <select class="sd-history-filter" id="historyFilter" aria-label="Φίλτρο μαθήματος">
+                            <option value="">Όλα τα μαθήματα</option>
+                        </select>
+                        <button class="sd-refresh-btn" id="historyBackfillBtn" type="button">
+                            Εισαγωγή παλαιότερων
+                        </button>
                     </div>
                 </div>
-            </section>
-
-            <section class="sd-category">
-                <button class="sd-category-toggle" type="button" aria-expanded="false" aria-controls="sdHistoryPanel">
-                    <span>Ιστορικό Βαθμολογιών</span>
-                    <span class="sd-category-chevron" aria-hidden="true">⌄</span>
-                </button>
-                <div class="sd-category-content" id="sdHistoryPanel">
-                    <!-- Single wrapper on purpose: the collapse animation sets
-                         grid-template-rows: 0fr on the panel, which only sizes
-                         the first row — any further children land in implicit
-                         auto rows and keep their full height while closed. -->
-                    <div class="sd-history-panel-inner">
-                    <div class="sd-history-bar">
-                        <label class="sd-notification-toggle" id="historyToggle">
-                            <span>Καταγραφή ιστορικού</span>
-                            <input type="checkbox" id="historyToggleInput" />
-                            <span class="sd-toggle-track" aria-hidden="true"><span></span></span>
-                        </label>
-                        <div class="sd-history-actions">
-                            <select class="sd-history-filter" id="historyFilter" aria-label="Φίλτρο μαθήματος">
-                                <option value="">Όλα τα μαθήματα</option>
-                            </select>
-                            <button class="sd-refresh-btn" id="historyBackfillBtn" type="button">
-                                Εισαγωγή παλαιότερων
-                            </button>
-                        </div>
-                    </div>
-                    <p class="sd-history-note" id="historyNote" role="status" aria-live="polite" hidden></p>
-                    <div class="sd-history-timeline" id="sdHistoryTimeline">
-                        <!-- Οι εγγραφές φορτώνονται μέσω JS -->
-                    </div>
-                    </div>
+                <p class="sd-history-note" id="historyNote" role="status" aria-live="polite" hidden></p>
+                <div class="sd-history-timeline" id="sdHistoryTimeline">
+                    <!-- Οι εγγραφές φορτώνονται μέσω JS -->
                 </div>
             </section>
         </div>
+
+        <!-- Αδελφό στοιχείο του .sd-content, όχι παιδί του: έτσι στο κινητό
+             κάθεται στον πάτο χωρίς position:fixed, και σε desktop ανεβαίνει
+             πάνω από το περιεχόμενο με ένα `order`. Στο κινητό η εφαρμογή
+             τρέχει σαν εγκατεστημένη (display: standalone), όπου η κάτω μπάρα
+             είναι και το φυσικό μοτίβο και το μόνο σημείο που φτάνει ο
+             αντίχειρας. -->
+        <nav class="sd-tabs" role="tablist" aria-label="Ενότητες">
+            <button class="sd-tab is-active" type="button" role="tab" id="tabBtnAssignments"
+                    data-panel="tabAssignments" aria-selected="true" aria-controls="tabAssignments">
+                <span class="sd-tab-label">Εκκρεμότητες</span>
+                <span class="sd-pending-badge" id="assignmentsBadge" hidden></span>
+            </button>
+            <button class="sd-tab" type="button" role="tab" id="tabBtnGrades"
+                    data-panel="tabGrades" aria-selected="false" aria-controls="tabGrades">
+                <span class="sd-tab-label">Βαθμοί</span>
+            </button>
+            <button class="sd-tab" type="button" role="tab" id="tabBtnHistory"
+                    data-panel="tabHistory" aria-selected="false" aria-controls="tabHistory">
+                <span class="sd-tab-label">Ιστορικό</span>
+            </button>
+        </nav>
     </div>
     <div class="dashboard-loader-wrapper" id="dashboard-loader-wrapper">
         <div class="grid"></div>
@@ -646,7 +619,7 @@
     function renderDashboardData(data) {
         currentData = data;
         renderStudentDashboard(data);
-        renderEduportalGrades(data.eduportalGrades);
+        renderGrades(data);
         renderSummary(data);
         preparePushNotifications();
         loadHistory();
@@ -659,6 +632,9 @@
         } else {
             loadAssignments();
         }
+        // Μετά το πρώτο render, όχι πριν: αν το tab επιλεγόταν με άδεια panels
+        // θα κουνούσε το scroll σε περιεχόμενο που δεν υπάρχει ακόμα.
+        restoreTab();
     }
 
     document.querySelector(".login-btn").addEventListener("click", () => {
@@ -717,8 +693,7 @@
         $("#studentDashboardBlock").stop(true, true).fadeOut(250, () => {
                 document.getElementById("sdStudentName").textContent = "Φόρτωση...";
                 document.getElementById("sdStudentID").textContent = "-";
-                document.getElementById("sdCoursesGrid").innerHTML = "";
-                document.getElementById("sdEduportalGrid").innerHTML = "";
+                document.getElementById("sdGradesGrid").innerHTML = "";
                 document.getElementById("sdHistoryTimeline").innerHTML = "";
                 historyEntries = [];
                 historyEnabled = false;
@@ -726,14 +701,7 @@
                 historyFilter.innerHTML = `<option value="">Όλα τα μαθήματα</option>`;
                 setHistoryNote("");
                 $(".dashboard-loader-wrapper").stop(true, true).hide();
-                document.querySelectorAll(".sd-category").forEach((category, index) => {
-                    const isOpen = index === 0;
-                    category.classList.toggle("is-open", isOpen);
-                    category.querySelector(".sd-category-toggle").setAttribute(
-                        "aria-expanded",
-                        String(isOpen),
-                    );
-                });
+                selectTab(DEFAULT_TAB, { remember: false });
                 passwordInput.value = "";
                 emailInput.value = "";
                 rememberInput.checked = false;
@@ -780,17 +748,69 @@
         }
     }
 
-    // Οι ενότητες ανοίγουν ανεξάρτητα. Πριν, το άνοιγμα μιας έκλεινε όλες τις
-    // άλλες — που σήμαινε ότι δεν μπορούσες να δεις ταυτόχρονα τον βαθμό του
-    // Moodle και τον επίσημο για το ίδιο μάθημα, δηλαδή ακριβώς τη σύγκριση
-    // που κάνει κάποιος όταν οι δύο αριθμοί διαφέρουν.
-    document.querySelectorAll(".sd-category-toggle").forEach((toggle) => {
-        toggle.addEventListener("click", () => {
-            const category = toggle.closest(".sd-category");
-            const isOpen = category.classList.toggle("is-open");
-            toggle.setAttribute("aria-expanded", String(isOpen));
+    // ------------------------------------------------------------------ Tabs
+    // Οι τέσσερις ενότητες έφταναν τις 6 οθόνες scroll σε κινητό με ανοιχτά
+    // όλα, και το ιστορικό ξεκινούσε στην 5η. Τρία panels, ένα κάθε φορά.
+    const DEFAULT_TAB = "tabAssignments";
+    const TAB_MEMORY_KEY = "halalas_active_tab";
+
+    function selectTab(panelId, { remember = true } = {}) {
+        const target = document.getElementById(panelId) ? panelId : DEFAULT_TAB;
+
+        document.querySelectorAll(".sd-tab").forEach((tab) => {
+            const isActive = tab.dataset.panel === target;
+            tab.classList.toggle("is-active", isActive);
+            tab.setAttribute("aria-selected", String(isActive));
         });
+        document.querySelectorAll(".sd-tabpanel").forEach((panel) => {
+            const isActive = panel.id === target;
+            panel.classList.toggle("is-active", isActive);
+            panel.hidden = !isActive;
+        });
+
+        // Αλλάζοντας tab το περιεχόμενο είναι καινούργιο· το να κρατήσουμε το
+        // scroll του προηγούμενου θα σε πετούσε στη μέση μιας λίστας που δεν
+        // ζήτησες.
+        const content = document.querySelector(".sd-content");
+        if (content) content.scrollTop = 0;
+
+        // Μόνο για τη διάρκεια της καρτέλας του browser. Σε νέο άνοιγμα
+        // ξεκινάς πάντα στις Εκκρεμότητες, που είναι το μόνο που αλλάζει
+        // καθημερινά — το να σε υποδέχεται το ιστορικό επειδή το κοίταξες
+        // κάποτε θα ήταν λάθος προεπιλογή.
+        if (remember) {
+            try {
+                sessionStorage.setItem(TAB_MEMORY_KEY, target);
+            } catch {
+                // Ιδιωτική περιήγηση ή κλειδωμένο storage: δεν χαλάει τίποτα.
+            }
+        }
+    }
+
+    document.querySelectorAll(".sd-tab").forEach((tab) => {
+        tab.addEventListener("click", () => selectTab(tab.dataset.panel));
     });
+
+    // Βέλη αριστερά/δεξιά μέσα στη μπάρα, όπως ορίζει το πρότυπο για tablist.
+    document.querySelector(".sd-tabs").addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+        const tabs = [...document.querySelectorAll(".sd-tab")];
+        const current = tabs.findIndex((tab) => tab.classList.contains("is-active"));
+        const next = (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+        tabs[next].focus();
+        selectTab(tabs[next].dataset.panel);
+        event.preventDefault();
+    });
+
+    function restoreTab() {
+        let saved = null;
+        try {
+            saved = sessionStorage.getItem(TAB_MEMORY_KEY);
+        } catch {
+            // αγνόησέ το
+        }
+        selectTab(saved || DEFAULT_TAB, { remember: false });
+    }
 
     function renderStudentDashboard(responseData, isRefresh = false) {
         const user = responseData.user;
@@ -805,91 +825,6 @@
         document.getElementById("sdStudentName").textContent = user.fullName;
         document.getElementById("sdStudentID").textContent = user.ID;
 
-        const coursesGrid = document.getElementById("sdCoursesGrid");
-        coursesGrid.innerHTML = "";
-
-        const courses = Array.isArray(responseData.courses) ? responseData.courses : [];
-
-        if (courses.length === 0) {
-            coursesGrid.innerHTML =
-                `<div class="sd-no-grades">Δεν βρέθηκαν μαθήματα για τον λογαριασμό σας.</div>`;
-        }
-
-        courses.forEach((course) => {
-            const hasGrade = course.overallGrade !== null && course.overallGrade !== undefined;
-            const gradesData = Array.isArray(course.grades) ? course.grades : [];
-
-            const card = document.createElement("div");
-            card.className = "sd-course-card";
-
-            // "Τελικός Βαθμός" ήταν λάθος και παραπλανούσε: αυτό είναι το
-            // τρέχον σύνολο που κρατάει ο διδάσκων στο Moodle, ενώ ο τελικός
-            // βαθμός βγαίνει στο eduportal και συχνά διαφέρει.
-            //
-            // Και μια παύλα δεν λέει αν δεν εξετάστηκες, αν περιμένεις βαθμό ή
-            // αν κόπηκες — οι κάρτες του eduportal το έλεγαν ήδη με λέξεις.
-            let cardHTML = `
-            <div class="sd-card-header" tabindex="0" role="button" aria-expanded="false">
-                <div class="sd-course-title">${course.name}</div>
-                <div class="sd-overall-grade${hasGrade ? " has-grade" : ""}">
-                    <span>Βαθμός Moodle:</span>
-                    <span>${hasGrade ? course.overallGrade : "Χωρίς βαθμό ακόμα"}</span>
-                </div>
-                <div class="sd-toggle-hint">
-                    <span>Αναλυτική Βαθμολογία</span>
-                    <span class="sd-chevron">▼</span>
-                </div>
-            </div>
-            <div class="sd-grades-list">
-        `;
-
-            let hasValidGrades = false;
-
-            gradesData.forEach((gradeItem) => {
-                if (!gradeItem || Object.keys(gradeItem).length === 0) return;
-
-                hasValidGrades = true;
-                let name =
-                    gradeItem.name !== "" ? gradeItem.name : "Γενικός Βαθμός / Αναγωγή";
-                let gradeValue = gradeItem.grade !== null ? gradeItem.grade : "-";
-                let gradeClass =
-                    gradeItem.grade !== null
-                        ? "sd-grade-value has-grade"
-                        : "sd-grade-value";
-
-                cardHTML += `
-                <div class="sd-grade-item">
-                    <span class="sd-grade-name">${name}</span>
-                    <span class="${gradeClass}">${gradeValue}</span>
-                </div> 
-            `;
-            });
-
-            if (!hasValidGrades) {
-                cardHTML += `<div class="sd-no-grades">Δεν υπάρχουν καταχωρημένες βαθμολογίες</div>`;
-            }
-
-            cardHTML += `</div>`;
-            card.innerHTML = cardHTML;
-
-            // Προσθήκη Event Listener στο header της κάρτας για να ανοιγοκλείνει
-            const cardHeader = card.querySelector(".sd-card-header");
-            const toggleCard = () => {
-                const isExpanded = card.classList.toggle("expanded");
-                cardHeader.setAttribute("aria-expanded", String(isExpanded));
-            };
-
-            cardHeader.addEventListener("click", toggleCard);
-            cardHeader.addEventListener("keydown", (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    toggleCard();
-                }
-            });
-
-            coursesGrid.appendChild(card);
-        });
-
         // Εμφάνιση του Dashboard (χρησιμοποιούμε flex για να δουλεύει σωστά το scroll)
         if (!isRefresh) RenderloadingScreen("collectDataEnd");
         // $(".dashboard-loader-wrapper").fadeOut("fast", () => {
@@ -900,81 +835,205 @@
         // });
     }
 
-    // Δεδομένα από /eduportal-grades: [{ courseCode, title, grade, isPassed,
-    // semester, examPeriod, units, ects, category, type, ... }, ...] — δομή
-    // πολύ πιο απλή από τα Moodle δεδομένα, μία κάρτα ανά μάθημα χωρίς
-    // αναλυτικά sub-items.
-    function renderEduportalGrades(grades) {
-        const grid = document.getElementById("sdEduportalGrid");
+    // ---------------------------------------------------------------- Βαθμοί
+    // Μία κάρτα ανά μάθημα, με όσες από τις δύο πηγές υπάρχουν.
+    //
+    // Ήταν δύο ξεχωριστές ενότητες, και αυτό ήταν μέρος του προβλήματος: το
+    // ίδιο μάθημα εμφανιζόταν δύο φορές με διαφορετικό αριθμό και τίποτα δεν
+    // έδενε τις δύο εμφανίσεις μεταξύ τους. Ενωμένες, η διαφορά φαίνεται στην
+    // ίδια γραμμή αντί να πρέπει να τη θυμάσαι ανάμεσα σε δύο οθόνες.
+    //
+    // Οι δύο πηγές δεν καλύπτουν τα ίδια μαθήματα: το Moodle έχει μόνο όσα
+    // παρακολουθείς τώρα, το eduportal όλα όσα πέρασαν ποτέ από την καρτέλα
+    // σου. Γι' αυτό η ένωση είναι σε δύο ομάδες και όχι σε μία λίστα.
+
+    // Το Moodle δίνει "ΗΥ-240 Δομές Δεδομένων", το eduportal "ΗΥ-240" χωριστά.
+    // Η παύλα δεν είναι πάντα η ίδια (- έναντι –), γι' αυτό κανονικοποιείται.
+    function courseKey(value) {
+        if (!value) return "";
+        const match = String(value).trim().match(/^([\p{L}\d]+\s*[-–—]\s*\d+)/u);
+        return (match ? match[1] : String(value).trim())
+            .replace(/[–—]/g, "-")
+            .replace(/\s+/g, "")
+            .toUpperCase();
+    }
+
+    function moodleTitleWithoutCode(name) {
+        return String(name || "").replace(/^[\p{L}\d]+\s*[-–—]\s*\d+\s*/u, "").trim();
+    }
+
+    function mergeGradeSources(data) {
+        const official = Array.isArray(data.eduportalGrades) ? data.eduportalGrades : [];
+        const moodle = Array.isArray(data.courses) ? data.courses : [];
+
+        const byCode = new Map();
+        for (const course of official) {
+            const key = courseKey(course.courseCode);
+            if (key) byCode.set(key, { key, code: course.courseCode, official: course, moodle: null });
+        }
+
+        for (const course of moodle) {
+            const key = courseKey(course.name);
+            const existing = byCode.get(key);
+            if (existing) {
+                existing.moodle = course;
+            } else {
+                byCode.set(key, { key, code: key, official: null, moodle: course });
+            }
+        }
+
+        const byCodeAsc = (a, b) =>
+            String(a.code ?? "").localeCompare(String(b.code ?? ""), undefined, {
+                numeric: true,
+                sensitivity: "base",
+            });
+
+        const all = [...byCode.values()];
+        return {
+            current: all.filter((entry) => entry.moodle).sort(byCodeAsc),
+            past: all.filter((entry) => !entry.moodle).sort(byCodeAsc),
+        };
+    }
+
+    function gradeRow(label, value, isGood) {
+        const known = value !== null && value !== undefined && value !== "";
+        return `
+            <div class="sd-overall-grade${known && isGood ? " has-grade" : ""}${known ? "" : " is-empty"}">
+                <span>${escapeHtml(label)}</span>
+                <span>${known ? escapeHtml(String(value)) : "—"}</span>
+            </div>`;
+    }
+
+    function buildGradeCard(entry) {
+        const official = entry.official;
+        const moodle = entry.moodle;
+
+        const title = official
+            ? official.title
+            : moodleTitleWithoutCode(moodle.name) || moodle.name;
+
+        const card = document.createElement("div");
+        card.className = "sd-course-card";
+
+        const meta = official
+            ? [
+                  official.semester ? `Εξάμηνο: ${official.semester}` : "",
+                  official.examPeriod ? `Εξεταστική: ${official.examPeriod}` : "",
+                  official.units !== undefined ? `Μονάδες: ${official.units}` : "",
+                  official.ects !== undefined ? `ECTS: ${official.ects}` : "",
+              ].filter(Boolean)
+            : [];
+
+        // Χωρίς επίσημη εγγραφή δεν υπάρχει «πέρασε/δεν πέρασε» να δηλωθεί:
+        // το μάθημα απλώς τρέχει ακόμα.
+        const status = official
+            ? official.isPassed
+                ? { label: "Πέρασε", cls: "is-passed" }
+                : { label: "Σε εκκρεμότητα", cls: "is-pending" }
+            : { label: "Σε εξέλιξη", cls: "is-running" };
+
+        const moodleGrades = moodle && Array.isArray(moodle.grades)
+            ? moodle.grades.filter((item) => item && Object.keys(item).length > 0 && item.name)
+            : [];
+
+        let html = `
+            <div class="sd-card-header">
+                <div class="sd-course-title">
+                    ${escapeHtml(title)}
+                    ${entry.code ? `<span class="sd-course-code">(${escapeHtml(entry.code)})</span>` : ""}
+                </div>
+                <div class="sd-grade-pair">
+                    ${gradeRow("Επίσημος:", official ? official.grade : null, Boolean(official && official.isPassed))}
+                    ${moodle ? gradeRow("Moodle:", moodle.overallGrade, true) : ""}
+                </div>
+                ${meta.length ? `<div class="sd-course-meta">${meta.map((m) => `<span>${escapeHtml(m)}</span>`).join("")}</div>` : ""}
+                <div class="sd-course-status ${status.cls}">${status.label}</div>`;
+
+        if (moodleGrades.length > 0) {
+            html += `
+                <div class="sd-toggle-hint">
+                    <span>Αναλυτική βαθμολογία Moodle</span>
+                    <span class="sd-chevron">▼</span>
+                </div>`;
+        }
+
+        html += `
+                ${entry.official ? `<button class="sd-history-link" type="button">Ιστορικό μαθήματος</button>` : ""}
+            </div>`;
+
+        if (moodleGrades.length > 0) {
+            html += `<div class="sd-grades-list">`;
+            for (const item of moodleGrades) {
+                const known = item.grade !== null && item.grade !== undefined;
+                html += `
+                    <div class="sd-grade-item">
+                        <span class="sd-grade-name">${escapeHtml(item.name)}</span>
+                        <span class="sd-grade-value${known ? " has-grade" : ""}">${known ? escapeHtml(String(item.grade)) : "—"}</span>
+                    </div>`;
+            }
+            html += `</div>`;
+        }
+
+        card.innerHTML = html;
+
+        const hint = card.querySelector(".sd-toggle-hint");
+        if (hint) {
+            const toggle = () => card.classList.toggle("expanded");
+            hint.addEventListener("click", toggle);
+            hint.setAttribute("tabindex", "0");
+            hint.setAttribute("role", "button");
+            hint.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggle();
+                }
+            });
+        }
+
+        const historyLink = card.querySelector(".sd-history-link");
+        if (historyLink) {
+            historyLink.addEventListener("click", () => openHistoryFor(official.courseCode));
+        }
+
+        return card;
+    }
+
+    function renderGrades(data) {
+        const grid = document.getElementById("sdGradesGrid");
         grid.innerHTML = "";
 
-        if (!Array.isArray(grades) || grades.length === 0) {
-            grid.innerHTML = `<div class="sd-no-grades">Δεν βρέθηκαν επίσημοι βαθμοί</div>`;
+        const { current, past } = mergeGradeSources(data);
+
+        if (current.length === 0 && past.length === 0) {
+            grid.innerHTML = `<div class="sd-no-grades">Δεν βρέθηκαν μαθήματα για τον λογαριασμό σου.</div>`;
             return;
         }
 
-        const sortedGrades = [...grades].sort((firstCourse, secondCourse) =>
-            String(firstCourse.courseCode ?? "").localeCompare(
-                String(secondCourse.courseCode ?? ""),
-                undefined,
-                { numeric: true, sensitivity: "base" },
-            ),
-        );
+        const section = (label, entries) => {
+            if (entries.length === 0) return;
+            const heading = document.createElement("h3");
+            heading.className = "sd-grades-group-title";
+            heading.innerHTML = `${escapeHtml(label)} <span class="sd-assignment-group-count">${entries.length}</span>`;
+            grid.appendChild(heading);
 
-        sortedGrades.forEach((course) => {
-            const card = document.createElement("div");
-            card.className = "sd-course-card";
+            const row = document.createElement("div");
+            row.className = "sd-courses-row";
+            entries.forEach((entry) => row.appendChild(buildGradeCard(entry)));
+            grid.appendChild(row);
+        };
 
-            const gradeValue = course.grade !== null ? course.grade : "-";
-            const gradeClass = course.isPassed ? "sd-overall-grade has-grade" : "sd-overall-grade";
-            const statusLabel = course.isPassed ? "Πέρασε" : "Σε εκκρεμότητα";
-            const courseMeta = [
-                course.semester ? `Εξάμηνο: ${course.semester}` : "",
-                course.examPeriod ? `Εξεταστική: ${course.examPeriod}` : "",
-                course.units !== undefined ? `Μονάδες: ${course.units}` : "",
-                course.ects !== undefined ? `ECTS: ${course.ects}` : "",
-            ].filter(Boolean);
-
-            card.innerHTML = `
-                <div class="sd-card-header">
-                    <div class="sd-course-title">${course.title} <span class="sd-course-code">(${course.courseCode})</span></div>
-                    <div class="${gradeClass}">
-                        <span>Βαθμός:</span>
-                        <span>${gradeValue}</span>
-                    </div>
-                    <div class="sd-course-meta">
-                        ${courseMeta.map((item) => `<span>${item}</span>`).join("")}
-                    </div>
-                    <div class="sd-course-status ${course.isPassed ? "is-passed" : "is-pending"}">
-                        ${statusLabel}
-                    </div>
-                    <button class="sd-history-link" type="button" data-course="${course.courseCode}">
-                        Ιστορικό μαθήματος
-                    </button>
-                </div>
-            `;
-
-            card.querySelector(".sd-history-link").addEventListener("click", () => {
-                openHistoryFor(course.courseCode);
-            });
-
-            grid.appendChild(card);
-        });
+        section("Τρέχοντα μαθήματα", current);
+        section("Παλαιότερα", past);
     }
 
-    // Άνοιγμα της ενότητας ιστορικού φιλτραρισμένης σε ένα μάθημα, από την
-    // κάρτα του eduportal.
+    // Από την κάρτα ενός μαθήματος στο ιστορικό του: αλλάζει tab και εφαρμόζει
+    // το φίλτρο, ώστε να μη χρειάζεται να το ξαναβρείς μόνος σου στη λίστα.
     function openHistoryFor(courseCode) {
-        const section = document.getElementById("sdHistoryPanel").closest(".sd-category");
-        if (!section.classList.contains("is-open")) {
-            section.querySelector(".sd-category-toggle").click();
-        }
-
+        selectTab("tabHistory");
         if ([...historyFilter.options].some((option) => option.value === courseCode)) {
             historyFilter.value = courseCode;
         }
         renderHistory();
-        section.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     // ----------------------------------------------------------- Εκκρεμότητες

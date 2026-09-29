@@ -80,8 +80,46 @@
                 </div>
             </div>
 
+            <!-- Πρώτο και ανοιχτό εξ ορισμού: είναι το μόνο κομμάτι της σελίδας
+                 που λήγει. Η λίστα μαθημάτων από κάτω δεν αλλάζει μέσα στο
+                 εξάμηνο, οπότε δεν χάνει τίποτα αν ξεκινά κλειστή. -->
             <section class="sd-category is-open">
-                <button class="sd-category-toggle" type="button" aria-expanded="true" aria-controls="sdCoursesPanel">
+                <button class="sd-category-toggle" type="button" aria-expanded="true" aria-controls="sdAssignmentsPanel">
+                    <span>
+                        Εκκρεμότητες
+                        <!-- Ο αριθμός μένει ορατός και με κλειστό το section —
+                             αλλιώς μια προθεσμία θα κρυβόταν πίσω από ένα κλικ. -->
+                        <span class="sd-pending-badge" id="assignmentsBadge" hidden></span>
+                    </span>
+                    <span class="sd-category-chevron" aria-hidden="true">⌄</span>
+                </button>
+                <div class="sd-category-content" id="sdAssignmentsPanel">
+                    <!-- Ένα wrapper, για τον ίδιο λόγο που το έχει και το
+                         ιστορικό: το grid-template-rows: 0fr του κλεισίματος
+                         διαστασιολογεί μόνο την πρώτη γραμμή. -->
+                    <div class="sd-history-panel-inner">
+                        <div class="sd-history-bar">
+                            <label class="sd-notification-toggle" id="assignmentsShowDone">
+                                <span>Δείξε και τα παραδομένα</span>
+                                <input type="checkbox" id="assignmentsShowDoneInput" />
+                                <span class="sd-toggle-track" aria-hidden="true"><span></span></span>
+                            </label>
+                            <div class="sd-history-actions">
+                                <button class="sd-refresh-btn" id="assignmentsRefreshBtn" type="button">
+                                    Ανανέωση
+                                </button>
+                            </div>
+                        </div>
+                        <p class="sd-history-note" id="assignmentsNote" role="status" aria-live="polite" hidden></p>
+                        <div class="sd-assignments-list" id="sdAssignmentsList">
+                            <!-- Οι εκκρεμότητες φορτώνονται μέσω JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sd-category">
+                <button class="sd-category-toggle" type="button" aria-expanded="false" aria-controls="sdCoursesPanel">
                     <span>Τα Μαθήματά μου</span>
                     <span class="sd-category-chevron" aria-hidden="true">⌄</span>
                 </button>
@@ -465,6 +503,15 @@
         renderEduportalGrades(data.eduportalGrades);
         preparePushNotifications();
         loadHistory();
+        // Το /auth/session κουβαλάει ήδη τις εκκρεμότητες, οπότε ζωγραφίζουμε
+        // κατευθείαν από αυτό και γλιτώνουμε ένα request. Το loadAssignments()
+        // μένει για το κουμπί και για την περίπτωση που λείπει το πεδίο (π.χ.
+        // frontend νεότερο από το backend που τρέχει).
+        if (data.assignments !== undefined) {
+            applyAssignmentsPayload({ available: data.assignments !== null, assignments: data.assignments });
+        } else {
+            loadAssignments();
+        }
     }
 
     document.querySelector(".login-btn").addEventListener("click", () => {
@@ -773,6 +820,233 @@
         renderHistory();
         section.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+
+    // ----------------------------------------------------------- Εκκρεμότητες
+    // Δεδομένα από GET /assignments: { ok, available, pendingCount, assignments }
+    // Κάθε εγγραφή: { id, name, courseId, courseName, moduleName, dueAt,
+    //                 submitted, overdue, url }
+    //
+    // Το `available: false` σημαίνει ότι το Moodle δεν διαβάστηκε — ΔΕΝ είναι το
+    // ίδιο με «δεν έχεις τίποτα». Αν τα ισοπεδώσουμε, μια αποτυχία θα
+    // εμφανιζόταν σαν καθαρό ταμπλό, που είναι ο χειρότερος τρόπος να χαλάσει
+    // αυτή η οθόνη.
+    const assignmentsBaseUrl = "https://uni-api.halalas-services.xyz/assignments";
+
+    const assignmentsBadge = document.getElementById("assignmentsBadge");
+    const assignmentsNote = document.getElementById("assignmentsNote");
+    const assignmentsList = document.getElementById("sdAssignmentsList");
+    const assignmentsRefreshBtn = document.getElementById("assignmentsRefreshBtn");
+    const assignmentsShowDoneInput = document.getElementById("assignmentsShowDoneInput");
+
+    let assignmentEntries = [];
+    let assignmentsAvailable = false;
+
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    function setAssignmentsNote(message, isError = false) {
+        assignmentsNote.textContent = message;
+        assignmentsNote.hidden = !message;
+        assignmentsNote.classList.toggle("is-error", isError);
+    }
+
+    // Πόσο μακριά είναι η προθεσμία, σε λόγια. Οι μέρες μετριούνται σε
+    // ημερολογιακά μεσάνυχτα και όχι σε 24ωρα, γιατί «αύριο στις 09:00» είναι
+    // αύριο ακόμα κι όταν απέχει 14 ώρες.
+    function describeDue(dueAt, now = Date.now()) {
+        if (!dueAt) return "χωρίς προθεσμία";
+
+        const due = new Date(dueAt).getTime();
+        if (Number.isNaN(due)) return "χωρίς προθεσμία";
+
+        const startOfDay = (value) => {
+            const date = new Date(value);
+            date.setHours(0, 0, 0, 0);
+            return date.getTime();
+        };
+        const days = Math.round((startOfDay(due) - startOfDay(now)) / DAY_MS);
+
+        if (due < now) {
+            if (days === 0) return "έληξε σήμερα";
+            if (days === -1) return "έληξε χθες";
+            return `έληξε πριν ${Math.abs(days)} μέρες`;
+        }
+        if (days === 0) return "λήγει σήμερα";
+        if (days === 1) return "λήγει αύριο";
+        if (days <= 7) return `σε ${days} μέρες`;
+        return `σε ${days} μέρες`;
+    }
+
+    function formatDueStamp(dueAt) {
+        if (!dueAt) return "";
+        const date = new Date(dueAt);
+        if (Number.isNaN(date.getTime())) return "";
+        return new Intl.DateTimeFormat("el-GR", { dateStyle: "medium", timeStyle: "short" }).format(date);
+    }
+
+    // Οι ομάδες είναι κατά επείγον, όχι κατά μάθημα: η ερώτηση που απαντά αυτή
+    // η λίστα είναι «τι πρέπει να κάνω τώρα», και η απάντηση δεν εξαρτάται από
+    // το ποιο μάθημα το ζήτησε.
+    const ASSIGNMENT_GROUPS = [
+        { key: "overdue", label: "Εκπρόθεσμες" },
+        { key: "today", label: "Σήμερα και αύριο" },
+        { key: "week", label: "Αυτή την εβδομάδα" },
+        { key: "later", label: "Αργότερα" },
+        { key: "undated", label: "Χωρίς προθεσμία" },
+        { key: "done", label: "Παραδομένες" },
+    ];
+
+    function groupFor(assignment, now) {
+        if (assignment.submitted) return "done";
+        if (!assignment.dueAt) return "undated";
+
+        const due = new Date(assignment.dueAt).getTime();
+        if (Number.isNaN(due)) return "undated";
+        if (due < now) return "overdue";
+        if (due - now <= 2 * DAY_MS) return "today";
+        if (due - now <= 7 * DAY_MS) return "week";
+        return "later";
+    }
+
+    function renderAssignmentsBadge() {
+        const pending = assignmentEntries.filter((entry) => !entry.submitted);
+        if (!assignmentsAvailable || pending.length === 0) {
+            assignmentsBadge.hidden = true;
+            return;
+        }
+
+        assignmentsBadge.hidden = false;
+        assignmentsBadge.textContent = String(pending.length);
+        // Κόκκινο μόνο όταν κάτι έχει όντως λήξει ή λήγει μέσα σε 24 ώρες —
+        // αλλιώς το σήμα είναι μονίμως κόκκινο και σταματά να σημαίνει κάτι.
+        const urgent = pending.some(
+            (entry) =>
+                entry.overdue ||
+                (entry.dueAt && new Date(entry.dueAt).getTime() - Date.now() <= DAY_MS),
+        );
+        assignmentsBadge.classList.toggle("is-urgent", urgent);
+        assignmentsBadge.title = urgent ? "Υπάρχει προθεσμία που λήγει ή έληξε" : "Εκκρεμότητες";
+    }
+
+    function renderAssignments() {
+        renderAssignmentsBadge();
+        assignmentsList.innerHTML = "";
+
+        if (!assignmentsAvailable) {
+            assignmentsList.innerHTML =
+                `<div class="sd-no-grades">Δεν μπορέσαμε να διαβάσουμε τις εργασίες από το Moodle. Δοκίμασε «Ανανέωση».</div>`;
+            return;
+        }
+
+        const showDone = assignmentsShowDoneInput.checked;
+        const visible = showDone ? assignmentEntries : assignmentEntries.filter((entry) => !entry.submitted);
+
+        if (visible.length === 0) {
+            assignmentsList.innerHTML = `<div class="sd-no-grades">${
+                assignmentEntries.length === 0
+                    ? "Δεν βρέθηκαν εργασίες με προθεσμία στο Moodle."
+                    : "Καμία εκκρεμότητα — όλα παραδομένα."
+            }</div>`;
+            return;
+        }
+
+        const now = Date.now();
+        const buckets = new Map(ASSIGNMENT_GROUPS.map((group) => [group.key, []]));
+        visible.forEach((entry) => buckets.get(groupFor(entry, now)).push(entry));
+
+        assignmentsList.innerHTML = ASSIGNMENT_GROUPS.filter((group) => buckets.get(group.key).length > 0)
+            .map((group) => {
+                const items = buckets
+                    .get(group.key)
+                    .map((entry) => {
+                        const link = entry.url
+                            ? `<a class="sd-assignment-link" href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">Άνοιγμα στο Moodle</a>`
+                            : "";
+                        const stamp = formatDueStamp(entry.dueAt);
+
+                        return `
+                            <article class="sd-assignment is-${escapeHtml(group.key)}">
+                                <div class="sd-assignment-main">
+                                    <div class="sd-assignment-name">${escapeHtml(entry.name)}</div>
+                                    <div class="sd-assignment-course">${escapeHtml(entry.courseName)}</div>
+                                </div>
+                                <div class="sd-assignment-due">
+                                    <span class="sd-assignment-relative">${escapeHtml(describeDue(entry.dueAt, now))}</span>
+                                    ${stamp ? `<time datetime="${escapeHtml(entry.dueAt)}">${escapeHtml(stamp)}</time>` : ""}
+                                    ${link}
+                                </div>
+                            </article>`;
+                    })
+                    .join("");
+
+                return `
+                    <div class="sd-assignment-group is-${escapeHtml(group.key)}">
+                        <h3 class="sd-assignment-group-title">
+                            ${escapeHtml(group.label)}
+                            <span class="sd-assignment-group-count">${buckets.get(group.key).length}</span>
+                        </h3>
+                        ${items}
+                    </div>`;
+            })
+            .join("");
+    }
+
+    function applyAssignmentsPayload(data) {
+        assignmentsAvailable = Boolean(data.available);
+        assignmentEntries = Array.isArray(data.assignments) ? data.assignments : [];
+        renderAssignments();
+    }
+
+    async function loadAssignments() {
+        try {
+            const response = await fetch(assignmentsBaseUrl, { credentials: "include" });
+            if (response.status === 401) return;
+
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error("ASSIGNMENTS_FAILED");
+
+            applyAssignmentsPayload(data);
+            setAssignmentsNote("");
+        } catch (error) {
+            // Κρατάμε ό,τι δείχναμε· ένα δίκτυο που κόπηκε δεν είναι λόγος να
+            // σβήσουμε προθεσμίες από την οθόνη.
+            setAssignmentsNote("Δεν φορτώθηκαν οι εκκρεμότητες.", true);
+        }
+    }
+
+    async function refreshAssignments() {
+        assignmentsRefreshBtn.disabled = true;
+        setAssignmentsNote("Ανανέωση...");
+
+        try {
+            const response = await fetch(`${assignmentsBaseUrl}/refresh`, {
+                method: "POST",
+                credentials: "include",
+            });
+            const data = await response.json();
+
+            if (response.status === 401) {
+                returnToLogin("Η σύνδεση έληξε. Συνδέσου ξανά.");
+                return;
+            }
+            // Το session επέζησε restart του server αλλά το Moodle token όχι —
+            // η αποθηκευμένη λίστα παίζει κανονικά, μόνο η ανανέωση θέλει login.
+            if (response.status === 409) {
+                setAssignmentsNote("Χρειάζεται νέο login για ανανέωση. Η λίστα που βλέπεις είναι από την τελευταία σύνδεση.", true);
+                return;
+            }
+            if (!response.ok || !data.ok) throw new Error("REFRESH_FAILED");
+
+            applyAssignmentsPayload(data);
+            setAssignmentsNote("Ενημερώθηκε.");
+        } catch (error) {
+            setAssignmentsNote("Η ανανέωση απέτυχε. Δοκίμασε ξανά.", true);
+        } finally {
+            assignmentsRefreshBtn.disabled = false;
+        }
+    }
+
+    assignmentsRefreshBtn.addEventListener("click", refreshAssignments);
+    assignmentsShowDoneInput.addEventListener("change", renderAssignments);
 
     // ---------------------------------------------------------------- Ιστορικό
     // Δεδομένα από GET /history/eduportal: { ok, enabled, total, history: [...] }

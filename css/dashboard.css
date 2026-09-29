@@ -637,6 +637,179 @@
         border-radius: 8px;
     }
 
+    /* ------------------------------------------------------------ Εκκρεμότητες */
+
+    /* Κάθεται στο κουμπί του section και μένει ορατό όταν αυτό είναι κλειστό,
+       οπότε δεν κληρονομεί το ellipsis του τίτλου. */
+    .sd-wrapper .sd-pending-badge {
+        display: inline-block;
+        margin-left: 10px;
+        min-width: 22px;
+        padding: 2px 8px;
+        border: 1px solid var(--mint-teal);
+        border-radius: 999px;
+        background: var(--near-black-teal);
+        color: var(--mint-teal);
+        font: 600 12px var(--font-data);
+        line-height: 1.5;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Κόκκινο μόνο για προθεσμία που λήγει μέσα σε 24 ώρες ή έχει λήξει — ένα
+       σήμα που είναι πάντα κόκκινο δεν προειδοποιεί για τίποτα. */
+    .sd-wrapper .sd-pending-badge.is-urgent {
+        border-color: #ff8f8f;
+        color: #ffb7b7;
+    }
+
+    .sd-wrapper .sd-pending-badge[hidden] {
+        display: none;
+    }
+
+    .sd-wrapper .sd-assignments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+    }
+
+    .sd-wrapper .sd-assignment-group-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 12px;
+        color: var(--pale-mint);
+        font: 600 13px var(--font-heading);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .sd-wrapper .sd-assignment-group-count {
+        padding: 1px 8px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 999px;
+        color: var(--cool-gray);
+        font: 11px var(--font-data);
+        letter-spacing: 0;
+    }
+
+    .sd-wrapper .sd-assignment-group.is-overdue .sd-assignment-group-title {
+        color: #ffb7b7;
+    }
+
+    .sd-wrapper .sd-assignment-group + .sd-assignment-group {
+        padding-top: 4px;
+    }
+
+    .sd-wrapper .sd-assignment {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr minmax(150px, 200px);
+        gap: 16px;
+        align-items: center;
+        padding: 14px 18px 14px 30px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--panel-dark);
+    }
+
+    .sd-wrapper .sd-assignment + .sd-assignment {
+        margin-top: 10px;
+    }
+
+    /* Ίδια κουκκίδα-δείκτης με τις εγγραφές του ιστορικού, ώστε οι δύο λίστες
+       να διαβάζονται σαν μέρη της ίδιας οθόνης. */
+    .sd-wrapper .sd-assignment::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 13px;
+        width: 9px;
+        height: 9px;
+        margin-top: -4px;
+        border-radius: 50%;
+        background: var(--cool-gray);
+    }
+
+    .sd-wrapper .sd-assignment.is-overdue::before {
+        background: #ff8f8f;
+        box-shadow: 0 0 10px rgba(255, 143, 143, 0.55);
+    }
+
+    .sd-wrapper .sd-assignment.is-today::before {
+        background: #ffc46b;
+        box-shadow: 0 0 10px rgba(255, 196, 107, 0.5);
+    }
+
+    .sd-wrapper .sd-assignment.is-week::before {
+        background: var(--mint-teal);
+        box-shadow: 0 0 10px rgba(94, 234, 212, 0.45);
+    }
+
+    .sd-wrapper .sd-assignment.is-done {
+        opacity: 0.6;
+    }
+
+    .sd-wrapper .sd-assignment.is-done::before {
+        background: var(--pale-mint);
+    }
+
+    .sd-wrapper .sd-assignment-main {
+        min-width: 0;
+    }
+
+    .sd-wrapper .sd-assignment-name {
+        color: var(--off-white);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .sd-wrapper .sd-assignment-course {
+        margin-top: 4px;
+        color: var(--cool-gray);
+        font: 12px var(--font-body);
+    }
+
+    .sd-wrapper .sd-assignment-due {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        text-align: right;
+    }
+
+    .sd-wrapper .sd-assignment-relative {
+        color: var(--pale-mint);
+        font: 600 13px var(--font-data);
+    }
+
+    .sd-wrapper .sd-assignment.is-overdue .sd-assignment-relative {
+        color: #ffb7b7;
+    }
+
+    .sd-wrapper .sd-assignment.is-today .sd-assignment-relative {
+        color: #ffc46b;
+    }
+
+    .sd-wrapper .sd-assignment-due time {
+        color: var(--cool-gray);
+        font: 11px var(--font-data);
+    }
+
+    .sd-wrapper .sd-assignment-link {
+        color: var(--mint-teal);
+        font: 11px var(--font-body);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    .sd-wrapper .sd-assignment-link:hover,
+    .sd-wrapper .sd-assignment-link:focus-visible {
+        color: var(--pale-mint);
+        outline: none;
+    }
+
     /* ------------------------------------------------- Ιστορικό βαθμολογιών */
     /* Collapses with the panel: the 0fr row only shrinks a child that is
        allowed to go below its content height. */
@@ -864,6 +1037,27 @@
     }
 
     @media (max-width: 600px) {
+        /* Η προθεσμία πάει κάτω από τον τίτλο και αριστερά — στοιχισμένη δεξιά
+           σε στενή οθόνη θα κρεμόταν μόνη της στη μέση του πουθενά. */
+        .sd-wrapper .sd-assignment {
+            grid-template-columns: 1fr;
+            gap: 10px;
+            align-items: start;
+        }
+
+        .sd-wrapper .sd-assignment::before {
+            top: 20px;
+            margin-top: 0;
+        }
+
+        .sd-wrapper .sd-assignment-due {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+        }
+
         .sd-wrapper .sd-history-entry {
             grid-template-columns: 1fr;
             gap: 10px;

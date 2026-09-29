@@ -5,7 +5,11 @@
         
         width: 100%;
         max-width: none;
+        /* 100vh σε κινητό μετράει το viewport σαν να μην υπάρχει η μπάρα του
+           browser, οπότε το κάτω μέρος κόβεται. Το dvh παρακολουθεί το
+           πραγματικό ύψος· το vh μένει από κάτω για παλιότερους browsers. */
         height: 100vh;
+        height: 100dvh;
         max-height: none;
         margin: 0;
         
@@ -183,20 +187,44 @@
         justify-content: flex-end; /* Σπρώχνει το περιεχόμενο τέρμα δεξιά */
         align-items: center;
         text-align: right; /* Τα γράμματα στοιχίζονται στα δεξιά */
-        flex-shrink: 0; 
+        flex-shrink: 0;
         z-index: 10;
         box-shadow: 0 2px 18px rgba(0, 0, 0, 0.3);
+        transition: padding 0.25s ease;
+    }
+
+    /* Μόλις αρχίσει το scroll η κεφαλίδα μαζεύεται: το λογότυπο έχει ήδη πει
+       ό,τι είχε να πει, και ο χώρος αξίζει περισσότερο στους βαθμούς. */
+    body.is-scrolled .sd-wrapper .sd-header {
+        padding: 8px 30px;
     }
 
     .sd-wrapper .sd-logo {
         width: 150px;
         height: auto;
         margin-right: auto;
+        transition: width 0.25s ease, opacity 0.25s ease;
+    }
+
+    body.is-scrolled .sd-wrapper .sd-logo {
+        width: 88px;
     }
 
     .sd-wrapper .sd-header h2 {
         font-size: 22px;
         margin: 0 0 5px 0;
+        transition: font-size 0.25s ease;
+    }
+
+    body.is-scrolled .sd-wrapper .sd-header h2 {
+        font-size: 17px;
+        margin-bottom: 2px;
+    }
+
+    /* Ο αριθμός μητρώου είναι το πρώτο που περισσεύει σε στενό ύψος: τον ξέρεις
+       ήδη, και δεν αλλάζει ποτέ. */
+    body.is-scrolled .sd-wrapper .sd-header p {
+        display: none;
     }
 
     .sd-wrapper .sd-header p {
@@ -344,6 +372,131 @@
         justify-content: flex-end;
         gap: 16px;
         min-width: 0;
+    }
+
+    /* Μηνύματα κατάστασης ("Ανανέωση δεδομένων...", σφάλματα). Άδειο τον
+       υπόλοιπο καιρό, οπότε δεν κρατάει χώρο. */
+    .sd-wrapper .sd-status-message:empty {
+        display: none;
+    }
+
+    .sd-wrapper .sd-status-message.is-error {
+        color: #ffb7b7;
+    }
+
+    /* ------------------------------------------------------------- Σύνοψη */
+
+    .sd-wrapper .sd-summary {
+        width: calc(100% - 40px);
+        margin: 0 20px 24px;
+        padding: 18px 16px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--panel-dark);
+    }
+
+    .sd-wrapper .sd-summary[hidden] {
+        display: none;
+    }
+
+    .sd-wrapper .sd-summary-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+        min-width: 0;
+    }
+
+    .sd-wrapper .sd-summary-item[hidden] {
+        display: none;
+    }
+
+    /* Ο αριθμός φέρει όλο το βάρος — γι' αυτό υπάρχει η λωρίδα — και η
+       ετικέτα από κάτω υπάρχει μόνο για να τον ονομάσει. */
+    .sd-wrapper .sd-summary-value {
+        color: var(--mint-teal);
+        font: 600 28px var(--font-data);
+        line-height: 1;
+    }
+
+    .sd-wrapper .sd-summary-item.is-urgent .sd-summary-value {
+        color: #ffc46b;
+    }
+
+    .sd-wrapper .sd-summary-label {
+        color: var(--cool-gray);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    /* Επεξηγηματική γραμμή στην κορυφή μιας ενότητας. */
+    .sd-wrapper .sd-section-note {
+        margin: 0 0 18px;
+        padding: 10px 14px;
+        border: 1px solid var(--border-subtle);
+        border-left: 3px solid var(--mint-teal);
+        border-radius: 8px;
+        background: var(--near-black-teal);
+        color: var(--pale-mint);
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .sd-wrapper .sd-courses-panel-inner {
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* Άδειο state που εξηγεί τι κερδίζεις, αντί μόνο τι λείπει. */
+    .sd-wrapper .sd-empty-pitch {
+        padding: 20px 22px;
+        border: 1px dashed var(--cool-gray);
+        border-radius: 10px;
+        color: var(--cool-gray);
+        font-size: 13px;
+        line-height: 1.65;
+    }
+
+    .sd-wrapper .sd-empty-pitch p {
+        margin: 0 0 10px;
+    }
+
+    .sd-wrapper .sd-empty-pitch p:last-child {
+        margin-bottom: 0;
+    }
+
+    .sd-wrapper .sd-empty-title {
+        color: var(--off-white);
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .sd-wrapper .sd-empty-pitch strong {
+        color: var(--pale-mint);
+        font-weight: 600;
+    }
+
+    .sd-wrapper .sd-empty-note {
+        color: #ffc46b;
+        font-size: 12px;
+    }
+
+    .sd-wrapper .sd-toggle-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        text-align: left;
+    }
+
+    .sd-wrapper .sd-toggle-text small {
+        color: var(--cool-gray);
+        font-size: 10.5px;
+        line-height: 1.3;
     }
 
     .sd-wrapper .sd-notification-toggle {
@@ -550,7 +703,19 @@
         font-weight: bold;
         display: flex;
         justify-content: space-between;
+        align-items: baseline;
+        gap: 10px;
         font-size: 15px;
+    }
+
+    /* "Χωρίς βαθμό ακόμα" είναι πρόταση, όχι αριθμός: μικρότερο και σβηστό,
+       ώστε μια κάρτα χωρίς βαθμό να μη διεκδικεί το ίδιο βλέμμα με μια που
+       έχει. */
+    .sd-wrapper .sd-overall-grade:not(.has-grade) span:last-child {
+        color: var(--cool-gray);
+        font-size: 12px;
+        font-weight: 500;
+        text-align: right;
     }
 
     /* Ένδειξη για το "Κλικ για άνοιγμα" */
@@ -1082,14 +1247,26 @@
 
     @media (max-width: 480px) {
         .sd-wrapper .sd-header {
-            min-height: 120px;
-            padding: 14px 20px;
+            /* Ήταν 120px — δηλαδή το 14% μιας οθόνης κινητού πήγαινε σε ένα
+               λογότυπο, πριν φανεί τίποτα χρήσιμο. */
+            min-height: 74px;
+            padding: 10px 16px;
+        }
+
+        body.is-scrolled .sd-wrapper .sd-header {
+            min-height: 54px;
+            padding: 6px 16px;
         }
 
         .sd-wrapper .sd-logo {
-            width: 88px;
-            height: 86px;
+            width: 56px;
+            height: 54px;
             object-fit: contain;
+        }
+
+        body.is-scrolled .sd-wrapper .sd-logo {
+            width: 44px;
+            height: 42px;
         }
 
         .sd-wrapper .sd-header h2 {
@@ -1124,12 +1301,27 @@
             flex-wrap: wrap;
         }
 
+        /* Έσπαγε σε δική του γραμμή για να χωρέσει δίπλα στο «Συνδεδεμένος».
+           Τώρα που αυτό έφυγε, η κουκκίδα θα έμενε μόνη της σε μια σειρά. */
         .sd-wrapper .sd-last-updated {
-            width: 100%;
-            padding-left: 17px;
+            width: auto;
+            padding-left: 0;
         }
 
         .sd-wrapper .sd-refresh-btn {
             width: 100%;
+        }
+
+        /* Δύο-δύο σε κινητό: τέσσερις στήλες θα έστριβαν τους αριθμούς σε
+           μέγεθος που δεν διαβάζεται με μια ματιά, και η ματιά είναι όλο το
+           νόημα αυτής της λωρίδας. */
+        .sd-wrapper .sd-summary {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px 12px;
+            padding: 16px 12px;
+        }
+
+        .sd-wrapper .sd-summary-value {
+            font-size: 24px;
         }
     }

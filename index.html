@@ -67,16 +67,46 @@
             <div class="sd-toolbar" role="status" aria-live="polite">
                 <div class="sd-status-block">
                     <span class="sd-status-dot" aria-hidden="true"></span>
-                    <span id="dashboardStatus">Συνδεδεμένος</span>
+                    <!-- Το ότι είσαι συνδεδεμένος φαίνεται από το ότι βλέπεις
+                         τα δεδομένα σου· το πότε τραβήχτηκαν δεν φαίνεται
+                         από πουθενά αλλού. Μένει μόνο το δεύτερο. -->
                     <span class="sd-last-updated" id="lastUpdated"></span>
+                    <span id="dashboardStatus" class="sd-status-message"></span>
                 </div>
                 <div class="sd-toolbar-actions">
                     <label class="sd-notification-toggle" id="notificationToggle" hidden>
-                        <span>Ειδοποιήσεις για νέους βαθμούς</span>
+                        <span class="sd-toggle-text">
+                            Ειδοποιήσεις
+                            <!-- Χωρίς αυτή τη γραμμή ο διακόπτης ζητάει τον
+                                 κωδικό σου χωρίς να έχει πει τι δίνει πίσω. -->
+                            <small>Μάθε για νέο βαθμό ή προθεσμία χωρίς να μπαίνεις</small>
+                        </span>
                         <input type="checkbox" id="notificationToggleInput" />
                         <span class="sd-toggle-track" aria-hidden="true"><span></span></span>
                     </label>
                     <button class="sd-refresh-btn" id="refreshBtn" type="button">Ανανέωση</button>
+                </div>
+            </div>
+
+            <!-- Οι τέσσερις αριθμοί που θα άνοιγες την εφαρμογή για να δεις.
+                 Ήταν όλοι διαθέσιμοι και πριν, αλλά ο καθένας απαιτούσε άνοιγμα
+                 ενότητας και διάβασμα καρτών. -->
+            <div class="sd-summary" id="sdSummary" hidden>
+                <div class="sd-summary-item">
+                    <span class="sd-summary-value" id="summaryAverage">—</span>
+                    <span class="sd-summary-label" id="summaryAverageLabel">Μέσος όρος</span>
+                </div>
+                <div class="sd-summary-item">
+                    <span class="sd-summary-value" id="summaryPassed">—</span>
+                    <span class="sd-summary-label">Περασμένα</span>
+                </div>
+                <div class="sd-summary-item">
+                    <span class="sd-summary-value" id="summaryEcts">—</span>
+                    <span class="sd-summary-label">ECTS</span>
+                </div>
+                <div class="sd-summary-item" id="summaryPendingItem">
+                    <span class="sd-summary-value" id="summaryPending">—</span>
+                    <span class="sd-summary-label">Εκκρεμότητες</span>
                 </div>
             </div>
 
@@ -124,8 +154,18 @@
                     <span class="sd-category-chevron" aria-hidden="true">⌄</span>
                 </button>
                 <div class="sd-category-content" id="sdCoursesPanel">
-                    <div class="sd-courses-grid" id="sdCoursesGrid">
-                        <!-- Οι κάρτες φορτώνονται μέσω JS -->
+                    <div class="sd-courses-panel-inner">
+                        <!-- Χωρίς αυτή τη γραμμή, δύο ενότητες δείχνουν
+                             διαφορετικό αριθμό για το ίδιο μάθημα και τίποτα
+                             δεν εξηγεί ποιος μετράει. -->
+                        <p class="sd-section-note">
+                            Οι βαθμοί εδώ είναι από το <strong>elearn (Moodle)</strong> — τους συντηρεί ο κάθε
+                            διδάσκων και αλλάζουν μέσα στο εξάμηνο. Ο βαθμός που μετράει είναι στους
+                            <strong>Επίσημους Βαθμούς</strong>.
+                        </p>
+                        <div class="sd-courses-grid" id="sdCoursesGrid">
+                            <!-- Οι κάρτες φορτώνονται μέσω JS -->
+                        </div>
                     </div>
                 </div>
             </section>
@@ -429,13 +469,43 @@
         status.classList.toggle("is-error", isError);
     }
 
-    function setLastUpdated() {
-        document.getElementById("lastUpdated").textContent =
-            `Τελευταία ενημέρωση: ${new Intl.DateTimeFormat("el-GR", {
-                dateStyle: "short",
-                timeStyle: "short",
-            }).format(new Date())}`;
+    // Πότε τραβήχτηκαν τα δεδομένα, σε σχετικό χρόνο: "πριν 2 ώρες" απαντά στο
+    // "είναι φρέσκα;" με μια ματιά, ενώ μια ημερομηνία θέλει να την αφαιρέσεις
+    // από την τρέχουσα ώρα στο μυαλό σου. Η ακριβής ώρα μένει στο tooltip.
+    let lastUpdatedAt = null;
+
+    function describeAge(then, now = Date.now()) {
+        const seconds = Math.max(0, Math.round((now - then) / 1000));
+        if (seconds < 60) return "μόλις τώρα";
+        const minutes = Math.round(seconds / 60);
+        if (minutes < 60) return `πριν ${minutes} ${minutes === 1 ? "λεπτό" : "λεπτά"}`;
+        const hours = Math.round(minutes / 60);
+        if (hours < 24) return `πριν ${hours} ${hours === 1 ? "ώρα" : "ώρες"}`;
+        const days = Math.round(hours / 24);
+        return `πριν ${days} ${days === 1 ? "μέρα" : "μέρες"}`;
     }
+
+    function paintLastUpdated() {
+        const element = document.getElementById("lastUpdated");
+        if (!lastUpdatedAt) {
+            element.textContent = "";
+            element.removeAttribute("title");
+            return;
+        }
+        element.textContent = `Ενημερώθηκε ${describeAge(lastUpdatedAt)}`;
+        element.title = new Intl.DateTimeFormat("el-GR", {
+            dateStyle: "medium",
+            timeStyle: "short",
+        }).format(new Date(lastUpdatedAt));
+    }
+
+    function setLastUpdated() {
+        lastUpdatedAt = Date.now();
+        paintLastUpdated();
+    }
+
+    // Χωρίς αυτό το "πριν 2 λεπτά" θα έμενε για πάντα "πριν 2 λεπτά".
+    setInterval(paintLastUpdated, 60 * 1000);
 
     async function startLogin(email, password) {
         const attemptId = ++loginAttempt;
@@ -497,10 +567,74 @@
         }
     }
 
+    // ------------------------------------------------------------- Σύνοψη
+    // Μόνο από τους επίσημους βαθμούς. Το Moodle κρατάει προσωρινά σύνολα που
+    // αλλάζουν μέσα στο εξάμηνο — ένας μέσος όρος χτισμένος πάνω τους θα
+    // κουνιόταν χωρίς να έχει περάσει κανένα μάθημα.
+    //
+    // Σταθμισμένος με ECTS, γιατί αυτό μετράει για το πτυχίο. Αν λείπουν ECTS
+    // από κάποιο μάθημα πέφτει σε απλό μέσο όρο και το λέει, αντί να βγάλει
+    // σιωπηλά νούμερο που δεν σημαίνει αυτό που νομίζεις.
+    function computeSummary(data) {
+        const official = Array.isArray(data.eduportalGrades) ? data.eduportalGrades : [];
+        const graded = official.filter((c) => c.grade !== null && c.grade !== undefined && c.isPassed);
+
+        const weights = graded.map((c) => Number(c.ects) || 0);
+        const weighted = weights.every((w) => w > 0);
+
+        let average = null;
+        if (graded.length > 0) {
+            average = weighted
+                ? graded.reduce((sum, c, i) => sum + Number(c.grade) * weights[i], 0) /
+                  weights.reduce((sum, w) => sum + w, 0)
+                : graded.reduce((sum, c) => sum + Number(c.grade), 0) / graded.length;
+        }
+
+        const pending = Array.isArray(data.assignments) ? data.assignments.filter((a) => !a.submitted).length : null;
+
+        return {
+            average,
+            weighted,
+            passed: graded.length,
+            total: official.length,
+            ects: graded.reduce((sum, c) => sum + (Number(c.ects) || 0), 0),
+            pending,
+        };
+    }
+
+    function renderSummary(data) {
+        const panel = document.getElementById("sdSummary");
+        const summary = computeSummary(data);
+
+        // Χωρίς έναν επίσημο βαθμό δεν υπάρχει τίποτα αληθινό να δείξουμε, και
+        // τέσσερις παύλες είναι χειρότερες από καθόλου λωρίδα.
+        if (summary.total === 0) {
+            panel.hidden = true;
+            return;
+        }
+        panel.hidden = false;
+
+        document.getElementById("summaryAverage").textContent =
+            summary.average === null ? "—" : summary.average.toFixed(2);
+        document.getElementById("summaryAverageLabel").textContent = summary.weighted
+            ? "Μέσος όρος (ECTS)"
+            : "Μέσος όρος";
+        document.getElementById("summaryPassed").textContent = `${summary.passed}/${summary.total}`;
+        document.getElementById("summaryEcts").textContent = String(summary.ects);
+
+        const pendingItem = document.getElementById("summaryPendingItem");
+        pendingItem.hidden = summary.pending === null;
+        if (summary.pending !== null) {
+            document.getElementById("summaryPending").textContent = String(summary.pending);
+            pendingItem.classList.toggle("is-urgent", summary.pending > 0);
+        }
+    }
+
     function renderDashboardData(data) {
         currentData = data;
         renderStudentDashboard(data);
         renderEduportalGrades(data.eduportalGrades);
+        renderSummary(data);
         preparePushNotifications();
         loadHistory();
         // Το /auth/session κουβαλάει ήδη τις εκκρεμότητες, οπότε ζωγραφίζουμε
@@ -520,10 +654,21 @@
     notificationToggleInput.addEventListener("change", () => {
         setNotificationsEnabled(notificationToggleInput.checked);
     });
-    function setBodyHeight() {
-        document.body.style.height = window.innerHeight + "px";
+    // Το ύψος του body ήταν καρφωμένο σε window.innerHeight με JavaScript, που
+    // σε κινητό αλλάζει κάθε φορά που κρύβεται ή εμφανίζεται η μπάρα του
+    // browser — κλασική πηγή για κομμένο περιεχόμενο και διπλό scrollbar.
+    // Το `100dvh` στο CSS κάνει το ίδιο πράγμα σωστά και χωρίς listener.
+
+    // Η κεφαλίδα κρατάει 210px σε desktop και ~120px σε κινητό για ένα
+    // λογότυπο. Μαζεύεται μόλις αρχίσεις να κυλάς, οπότε ο χώρος πάει σε αυτό
+    // που ήρθες να δεις.
+    const scrollHost = document.querySelector(".sd-content") || window;
+    function updateHeaderShrink() {
+        const offset = scrollHost === window ? window.scrollY : scrollHost.scrollTop;
+        document.body.classList.toggle("is-scrolled", offset > 24);
     }
-    setBodyHeight();
+    scrollHost.addEventListener("scroll", updateHeaderShrink, { passive: true });
+    updateHeaderShrink();
 
     function returnToLogin(message = "") {
         loginAttempt++;
@@ -608,7 +753,7 @@
             if (!response.ok || !data.ok) throw new Error("REFRESH_FAILED");
 
             renderDashboardData(data);
-            setDashboardStatus("Συνδεδεμένος");
+            setDashboardStatus("");
             setLastUpdated();
         } catch (error) {
             setDashboardStatus(
@@ -622,22 +767,15 @@
         }
     }
 
+    // Οι ενότητες ανοίγουν ανεξάρτητα. Πριν, το άνοιγμα μιας έκλεινε όλες τις
+    // άλλες — που σήμαινε ότι δεν μπορούσες να δεις ταυτόχρονα τον βαθμό του
+    // Moodle και τον επίσημο για το ίδιο μάθημα, δηλαδή ακριβώς τη σύγκριση
+    // που κάνει κάποιος όταν οι δύο αριθμοί διαφέρουν.
     document.querySelectorAll(".sd-category-toggle").forEach((toggle) => {
         toggle.addEventListener("click", () => {
             const category = toggle.closest(".sd-category");
             const isOpen = category.classList.toggle("is-open");
             toggle.setAttribute("aria-expanded", String(isOpen));
-
-            if (isOpen) {
-                document.querySelectorAll(".sd-category").forEach((otherCategory) => {
-                    if (otherCategory === category) return;
-
-                    otherCategory.classList.remove("is-open");
-                    otherCategory
-                        .querySelector(".sd-category-toggle")
-                        .setAttribute("aria-expanded", "false");
-                });
-            }
         });
     });
 
@@ -647,7 +785,7 @@
         if (!user) return;
 
         dashboardReady = true;
-        setDashboardStatus("Συνδεδεμένος");
+        setDashboardStatus("");
         setLastUpdated();
 
         // Συμπλήρωση στοιχείων φοιτητή (πάνω δεξιά)
@@ -665,19 +803,24 @@
         }
 
         courses.forEach((course) => {
-            const overallGrade = course.overallGrade ?? "-";
+            const hasGrade = course.overallGrade !== null && course.overallGrade !== undefined;
             const gradesData = Array.isArray(course.grades) ? course.grades : [];
 
             const card = document.createElement("div");
             card.className = "sd-course-card";
 
-            // Το header της κάρτας που μπορεί να πατηθεί
+            // "Τελικός Βαθμός" ήταν λάθος και παραπλανούσε: αυτό είναι το
+            // τρέχον σύνολο που κρατάει ο διδάσκων στο Moodle, ενώ ο τελικός
+            // βαθμός βγαίνει στο eduportal και συχνά διαφέρει.
+            //
+            // Και μια παύλα δεν λέει αν δεν εξετάστηκες, αν περιμένεις βαθμό ή
+            // αν κόπηκες — οι κάρτες του eduportal το έλεγαν ήδη με λέξεις.
             let cardHTML = `
             <div class="sd-card-header" tabindex="0" role="button" aria-expanded="false">
                 <div class="sd-course-title">${course.name}</div>
-                <div class="sd-overall-grade">
-                    <span>Τελικός Βαθμός:</span>
-                    <span>${overallGrade}</span>
+                <div class="sd-overall-grade${hasGrade ? " has-grade" : ""}">
+                    <span>Βαθμός Moodle:</span>
+                    <span>${hasGrade ? course.overallGrade : "Χωρίς βαθμό ακόμα"}</span>
                 </div>
                 <div class="sd-toggle-hint">
                     <span>Αναλυτική Βαθμολογία</span>
@@ -1135,7 +1278,18 @@
 
         if (!historyEnabled) {
             historyTimeline.innerHTML =
-                `<div class="sd-no-grades">Η καταγραφή ιστορικού είναι απενεργοποιημένη. Ενεργοποιήστε τη για να κρατάμε κάθε νέο και κάθε διορθωμένο βαθμό.</div>`;
+                // Ένα άδειο πάνελ που λέει μόνο "είναι κλειστό" δεν δίνει
+                // κανέναν λόγο να το ανοίξεις. Το eduportal δείχνει πάντα
+                // μόνο την τρέχουσα κατάσταση — αυτό που χάνεται χωρίς
+                // καταγραφή είναι το πότε άλλαξε κάτι, και δεν ξαναβρίσκεται.
+                `<div class="sd-empty-pitch">
+                    <p class="sd-empty-title">Η καταγραφή ιστορικού είναι κλειστή</p>
+                    <p>Το eduportal δείχνει μόνο τον βαθμό που ισχύει τώρα. Με την καταγραφή ανοιχτή
+                       κρατάμε <strong>πότε</strong> βγήκε κάθε βαθμός, τι έδειχνε πριν αν διορθώθηκε,
+                       και ποια εξεταστική ήταν η κάθε προσπάθεια.</p>
+                    <p class="sd-empty-note">Όσο είναι κλειστή δεν καταγράφεται τίποτα — οι αλλαγές που
+                       γίνονται στο μεταξύ χάνονται οριστικά.</p>
+                </div>`;
             return;
         }
 

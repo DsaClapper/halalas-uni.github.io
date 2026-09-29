@@ -18,7 +18,7 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260926" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930b" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -30,6 +30,52 @@
 </head>
 
 <body>
+    <!-- Εικονίδια από το Lucide (lucide.dev, ISC), αντιγραμμένα inline.
+         Κανένα package και κανένα CDN: για έξι εικονίδια ένα bundler θα ήταν
+         υποδομή για να γλιτώσεις έξι copy-paste, και ένα CDN θα πρόσθετε ένα
+         request πριν φανεί οτιδήποτε, για 200 bytes.
+         Inline έχει και κάτι που το CDN δεν δίνει: κληρονομούν το
+         `currentColor`, οπότε το ενεργό tab βάφει το εικονίδιο μαζί με την
+         ετικέτα χωρίς δεύτερο κανόνα CSS.
+
+         Ορίζονται μία φορά ως <symbol> και χρησιμοποιούνται με <use>, ώστε το
+         markup να μη γεμίσει με επαναλαμβανόμενα paths. Το ίδιο το <svg> είναι
+         κρυφό — είναι ορισμοί, όχι περιεχόμενο. -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+        <symbol id="i-clipboard-list" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <path d="M12 11h4"/><path d="M12 16h4"/>
+            <path d="M8 11h.01"/><path d="M8 16h.01"/>
+        </symbol>
+        <symbol id="i-graduation-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/>
+            <path d="M22 10v6"/>
+            <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>
+        </symbol>
+        <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M12 7v5l4 2"/>
+        </symbol>
+        <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6"/>
+        </symbol>
+        <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+        </symbol>
+        <symbol id="i-external-link" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h6v6"/><path d="M10 14 21 3"/>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        </symbol>
+    </svg>
+
     <div class="login-wrapper" id="loginWrapper" style="display: none;">
         <img src="imgs/halalas-university-logo.png" alt="Halalas University Portal" width="200" id="logo" data-app-logo>
         <div class="login-container">
@@ -184,15 +230,18 @@
         <nav class="sd-tabs" role="tablist" aria-label="Ενότητες">
             <button class="sd-tab is-active" type="button" role="tab" id="tabBtnAssignments"
                     data-panel="tabAssignments" aria-selected="true" aria-controls="tabAssignments">
+                <svg class="sd-tab-icon" aria-hidden="true"><use href="#i-clipboard-list"/></svg>
                 <span class="sd-tab-label">Εκκρεμότητες</span>
                 <span class="sd-pending-badge" id="assignmentsBadge" hidden></span>
             </button>
             <button class="sd-tab" type="button" role="tab" id="tabBtnGrades"
                     data-panel="tabGrades" aria-selected="false" aria-controls="tabGrades">
+                <svg class="sd-tab-icon" aria-hidden="true"><use href="#i-graduation-cap"/></svg>
                 <span class="sd-tab-label">Βαθμοί</span>
             </button>
             <button class="sd-tab" type="button" role="tab" id="tabBtnHistory"
                     data-panel="tabHistory" aria-selected="false" aria-controls="tabHistory">
+                <svg class="sd-tab-icon" aria-hidden="true"><use href="#i-history"/></svg>
                 <span class="sd-tab-label">Ιστορικό</span>
             </button>
         </nav>
@@ -953,7 +1002,7 @@
             html += `
                 <div class="sd-toggle-hint">
                     <span>Αναλυτική βαθμολογία Moodle</span>
-                    <span class="sd-chevron">▼</span>
+                    <svg class="sd-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
                 </div>`;
         }
 
@@ -1197,7 +1246,7 @@
                     .get(group.key)
                     .map((entry) => {
                         const link = entry.url
-                            ? `<a class="sd-assignment-link" href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">Άνοιγμα στο Moodle</a>`
+                            ? `<a class="sd-assignment-link" href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">Άνοιγμα στο Moodle<svg class="sd-link-icon" aria-hidden="true"><use href="#i-external-link"/></svg></a>`
                             : "";
                         const stamp = formatDueStamp(entry.dueAt);
 
@@ -1412,7 +1461,7 @@
                 const gradeText =
                     hasPrevious && (entry.type === "corrected" || entry.type === "changed")
                         ? `<span class="sd-history-from">${escapeHtml(entry.from)}</span>
-                           <span class="sd-history-arrow" aria-hidden="true">→</span>
+                           <svg class="sd-history-arrow" aria-hidden="true"><use href="#i-arrow-right"/></svg>
                            <span class="sd-history-grade">${escapeHtml(entry.grade)}</span>`
                         : `<span class="sd-history-grade">${escapeHtml(entry.grade)}</span>`;
 

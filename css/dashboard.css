@@ -503,6 +503,47 @@
         }
     }
 
+    /* Το εικονίδιο δεν έχει δικό του χρώμα: κληρονομεί το currentColor του
+       κουμπιού, οπότε βάφεται μαζί με την ετικέτα όταν το tab γίνεται ενεργό.
+       Αυτό είναι και ο λόγος που είναι inline SVG και όχι εικόνα. */
+    .sd-wrapper .sd-tab-icon {
+        width: 18px;
+        height: 18px;
+        flex: none;
+    }
+
+    /* Σε desktop εικονίδιο και ετικέτα στέκονται δίπλα-δίπλα. Σε κινητό το
+       εικονίδιο ανεβαίνει από πάνω: το κελί είναι στενό, και σε στοιβαγμένη
+       διάταξη η μπάρα αναγνωρίζεται με την άκρη του ματιού χωρίς διάβασμα. */
+    @media (max-width: 600px) {
+        .sd-wrapper .sd-tab {
+            flex-direction: column;
+            gap: 4px;
+            padding: 9px 6px;
+            font-size: 11px;
+        }
+
+        .sd-wrapper .sd-tab-icon {
+            width: 21px;
+            height: 21px;
+        }
+
+        /* Πάνω δεξιά στο εικονίδιο, όπως σε κάθε μπάρα εφαρμογής — όχι δίπλα
+           στη λέξη, που θα στένευε άλλο ένα ήδη στενό κελί. */
+        .sd-wrapper .sd-tab {
+            position: relative;
+        }
+
+        .sd-wrapper .sd-tab .sd-pending-badge {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            margin-left: 4px;
+            padding: 1px 6px;
+            font-size: 10px;
+        }
+    }
+
     .sd-wrapper .sd-tabpanel[hidden] {
         display: none;
     }
@@ -844,7 +885,9 @@
     }
 
     .sd-wrapper .sd-chevron {
-        font-size: 12px;
+        width: 16px;
+        height: 16px;
+        flex: none;
         transition: transform 0.3s ease;
     }
 
@@ -1087,10 +1130,21 @@
     }
 
     .sd-wrapper .sd-assignment-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
         color: var(--mint-teal);
         font: 11px var(--font-body);
         text-decoration: underline;
         text-underline-offset: 3px;
+    }
+
+    /* Λέει ότι ο σύνδεσμος φεύγει από την εφαρμογή — κάτι που η λέξη
+       «Άνοιγμα» υπονοεί αλλά δεν δηλώνει. */
+    .sd-wrapper .sd-link-icon {
+        width: 12px;
+        height: 12px;
+        flex: none;
     }
 
     .sd-wrapper .sd-assignment-link:hover,
@@ -1303,8 +1357,10 @@
     }
 
     .sd-wrapper .sd-history-arrow {
+        width: 15px;
+        height: 15px;
+        flex: none;
         color: var(--cool-gray);
-        font-size: 13px;
     }
 
     .sd-wrapper .sd-history-link {

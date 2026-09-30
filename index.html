@@ -25,7 +25,7 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260930d" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930e" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930f" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -135,7 +135,10 @@
              να το κάνει το gesture (που θα σε πετούσε στο login αν δεν έχεις
              «Remember me»), το προτείνει εδώ και το αποφασίζεις εσύ. -->
         <div class="sd-update-banner" id="updateBanner" hidden>
-            <span>Υπάρχει νεότερη έκδοση της εφαρμογής.</span>
+            <!-- Σύντομο ώστε να χωράει δίπλα στο κουμπί σε μία γραμμή στα
+                 390px· η προηγούμενη διατύπωση έσπαγε σε δύο και το μπάνερ
+                 έπιανε 77px για μια ειδοποίηση. -->
+            <span>Νέα έκδοση διαθέσιμη</span>
             <button type="button" id="updateReloadBtn">Φόρτωση</button>
         </div>
 
@@ -694,9 +697,13 @@
         }
     }
 
-    function renderDashboardData(data) {
+    // `isRefresh` σημαίνει «το dashboard είναι ήδη στην οθόνη». Χωρίς αυτό, το
+    // renderStudentDashboard έπαιζε την οθόνη φόρτωσης σε ΚΑΘΕ ανανέωση — που
+    // δεν φαινόταν όσο η ανανέωση ήταν ένα κουμπί που πατάς σπάνια, αλλά με το
+    // pull-to-refresh έγινε αναλαμπή σε κάθε τράβηγμα.
+    function renderDashboardData(data, isRefresh = false) {
         currentData = data;
-        renderStudentDashboard(data);
+        renderStudentDashboard(data, isRefresh);
         renderGrades(data);
         renderSummary(data);
         preparePushNotifications();
@@ -949,7 +956,7 @@
             }
             if (!response.ok || !data.ok) throw new Error("REFRESH_FAILED");
 
-            renderDashboardData(data);
+            renderDashboardData(data, true);
             setDashboardStatus("");
             setLastUpdated();
         } catch (error) {

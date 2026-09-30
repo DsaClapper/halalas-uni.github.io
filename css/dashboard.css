@@ -340,13 +340,16 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-wrap: wrap;
         gap: 12px;
         flex: none;
-        padding: 10px 16px;
+        padding: 8px 16px;
         background: var(--deep-teal);
         color: var(--off-white);
         font-size: 13px;
+        /* Χωρίς wrap: μία γραμμή, πάντα. Με wrap το μπάνερ μεγάλωνε σιωπηλά
+           σε στενή οθόνη και έσπρωχνε το περιεχόμενο. */
+        flex-wrap: nowrap;
+        white-space: nowrap;
     }
 
     .sd-wrapper .sd-update-banner[hidden] {
@@ -549,9 +552,16 @@
     /* Σε desktop η μπάρα ανεβαίνει πάνω από το περιεχόμενο — `order`, ώστε να
        μη χρειάζεται δεύτερο markup για την ίδια navigation. */
     @media (min-width: 601px) {
-        /* Η κεφαλίδα παίρνει κι αυτή order, αλλιώς τα tabs με -1 προσπερνούν
-           και αυτήν και καταλήγουν στην κορυφή της σελίδας. */
+        /* Όποιος μπαίνει σε αυτή τη σειρά ΠΡΕΠΕΙ να πάρει order, αλλιώς πέφτει
+           στο 0 και τον προσπερνούν όσοι έχουν αρνητικό. Το μπάνερ έκδοσης το
+           έπαθε ακριβώς αυτό: κατέληγε ανάμεσα στα tabs και το περιεχόμενο,
+           αντί για ειδοποίηση συστήματος κάτω από την κεφαλίδα.
+           Σειρά: κεφαλίδα, μπάνερ, tabs, περιεχόμενο. */
         .sd-wrapper .sd-header {
+            order: -3;
+        }
+
+        .sd-wrapper .sd-update-banner {
             order: -2;
         }
 

@@ -25,7 +25,7 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260930d" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930d" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930e" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -81,6 +81,13 @@
             <path d="M15 3h6v6"/><path d="M10 14 21 3"/>
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
         </symbol>
+        <symbol id="i-refresh-cw" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M8 16H3v5"/>
+        </symbol>
     </svg>
 
     <div class="login-wrapper" id="loginWrapper" style="display: none;">
@@ -123,7 +130,22 @@
             </div>
         </div>
 
+        <!-- Μπάνερ νέας έκδοσης. Το pull-to-refresh φέρνει νέα δεδομένα αλλά
+             τρέχει τον ίδιο κώδικα· μόνο το reload φορτώνει καινούργιο. Αντί
+             να το κάνει το gesture (που θα σε πετούσε στο login αν δεν έχεις
+             «Remember me»), το προτείνει εδώ και το αποφασίζεις εσύ. -->
+        <div class="sd-update-banner" id="updateBanner" hidden>
+            <span>Υπάρχει νεότερη έκδοση της εφαρμογής.</span>
+            <button type="button" id="updateReloadBtn">Φόρτωση</button>
+        </div>
+
         <div class="sd-content">
+            <!-- Ο δείκτης του τραβήγματος. Κάθεται πάνω από το περιεχόμενο και
+                 ακολουθεί το δάχτυλο· χωρίς αυτόν το gesture δεν έχει καμία
+                 ένδειξη ότι το κατάλαβε η σελίδα. -->
+            <div class="sd-pull-indicator" id="pullIndicator" aria-hidden="true">
+                <svg class="sd-pull-icon"><use href="#i-refresh-cw"/></svg>
+            </div>
             <div class="sd-toolbar" role="status" aria-live="polite">
                 <div class="sd-status-block">
                     <span class="sd-status-dot" aria-hidden="true"></span>
@@ -713,6 +735,144 @@
         document.body.classList.toggle("is-scrolled", offset > 24);
     }
     scrollHost.addEventListener("scroll", updateHeaderShrink, { passive: true });
+
+    // ------------------------------------------------------- Pull to refresh
+    // Γράφεται στο χέρι επειδή δεν το δίνει κανένας browser εδώ: το scroll
+    // γίνεται μέσα στο .sd-content και όχι στο document (το wrapper είναι
+    // 100dvh; overflow:hidden), και το native pull-to-refresh του Chrome
+    // δουλεύει μόνο σε document scroll. Το Safari σε display:standalone δεν
+    // το έχει καθόλου.
+    //
+    // Δεν κάνει location.reload(): χωρίς «Remember me» το φόρτωμα πάει στην
+    // οθόνη σύνδεσης, οπότε το gesture θα μπορούσε να σε αποσυνδέσει — κάτι
+    // που μια κίνηση που κάνεις αντανακλαστικά δεν επιτρέπεται να κάνει.
+    // Νέα έκδοση την προτείνει το μπάνερ, δεν την επιβάλλει το τράβηγμα.
+    const PULL_TRIGGER_PX = 70;
+    const PULL_MAX_PX = 110;
+    // Κάτω από αυτό δεν είναι τράβηγμα, είναι το τρέμουλο του δαχτύλου.
+    const PULL_START_PX = 8;
+
+    const pullIndicator = document.getElementById("pullIndicator");
+    let pullStartY = null;
+    let pullDistance = 0;
+    let pullArmed = false;
+    let pullRefreshing = false;
+
+    function setPull(distance) {
+        pullDistance = distance;
+        pullIndicator.style.transform = `translate(-50%, ${distance}px)`;
+        pullIndicator.style.opacity = String(Math.min(1, distance / PULL_TRIGGER_PX));
+        pullIndicator.classList.toggle("is-ready", distance >= PULL_TRIGGER_PX);
+    }
+
+    function resetPull() {
+        pullStartY = null;
+        pullArmed = false;
+        pullIndicator.style.transition = "transform 0.25s ease, opacity 0.25s ease";
+        setPull(0);
+        setTimeout(() => (pullIndicator.style.transition = ""), 260);
+    }
+
+    scrollHost.addEventListener(
+        "touchstart",
+        (event) => {
+            // Οπλίζει ΜΟΝΟ στην κορυφή και μόνο με ένα δάχτυλο. Αλλιώς το
+            // gesture θα πυροδοτούνταν στη μέση ενός κανονικού scroll, που
+            // είναι χειρότερο από το να μην υπάρχει καθόλου.
+            if (pullRefreshing || scrollHost.scrollTop > 0 || event.touches.length !== 1) return;
+            pullStartY = event.touches[0].clientY;
+            pullArmed = false;
+        },
+        { passive: true }
+    );
+
+    scrollHost.addEventListener(
+        "touchmove",
+        (event) => {
+            if (pullStartY === null || pullRefreshing) return;
+
+            const delta = event.touches[0].clientY - pullStartY;
+            // Τράβηγμα προς τα πάνω ή επιστροφή μέσα στο περιεχόμενο: ακύρωση.
+            if (delta <= 0 || scrollHost.scrollTop > 0) {
+                if (pullArmed) resetPull();
+                pullStartY = null;
+                return;
+            }
+            if (delta < PULL_START_PX) return;
+
+            pullArmed = true;
+            // Αντίσταση: το δάχτυλο τρέχει πιο γρήγορα από τον δείκτη, ώστε
+            // να μη φτάνει το κατώφλι κατά λάθος.
+            setPull(Math.min(PULL_MAX_PX, (delta - PULL_START_PX) * 0.5));
+        },
+        { passive: true }
+    );
+
+    scrollHost.addEventListener("touchend", async () => {
+        if (!pullArmed || pullRefreshing) {
+            if (pullArmed) resetPull();
+            pullStartY = null;
+            return;
+        }
+
+        const shouldRefresh = pullDistance >= PULL_TRIGGER_PX;
+        pullStartY = null;
+        if (!shouldRefresh) {
+            resetPull();
+            return;
+        }
+
+        pullRefreshing = true;
+        pullIndicator.classList.add("is-spinning");
+        setPull(PULL_TRIGGER_PX);
+        try {
+            await refreshDashboardData();
+            // Το τράβηγμα είναι η στιγμή που ζητάς φρέσκα πράγματα — καλή
+            // αφορμή να κοιτάξουμε και για νέα έκδοση.
+            checkForUpdate();
+        } finally {
+            pullRefreshing = false;
+            pullIndicator.classList.remove("is-spinning");
+            resetPull();
+        }
+    });
+
+    // ----------------------------------------------------- Έλεγχος έκδοσης
+    // Σύγκριση του Last-Modified του index.html με αυτό που ίσχυε όταν άνοιξε
+    // η εφαρμογή. Το GitHub Pages δεν στέλνει ETag για το index.html αλλά
+    // στέλνει Last-Modified, και ένα HEAD αρκεί — δεν κατεβαίνει το σώμα.
+    let loadedVersionStamp = null;
+
+    async function readVersionStamp() {
+        try {
+            const response = await fetch("index.html", { method: "HEAD", cache: "no-store" });
+            return response.headers.get("last-modified");
+        } catch {
+            return null;
+        }
+    }
+
+    async function checkForUpdate() {
+        const stamp = await readVersionStamp();
+        if (!stamp) return;
+        if (loadedVersionStamp === null) {
+            loadedVersionStamp = stamp;
+            return;
+        }
+        if (stamp !== loadedVersionStamp) {
+            document.getElementById("updateBanner").hidden = false;
+        }
+    }
+
+    document.getElementById("updateReloadBtn").addEventListener("click", () => location.reload());
+
+    // Η αρχική τιμή μετριέται μια φορά στο άνοιγμα· μετά ελέγχουμε όταν
+    // επιστρέφεις στην εφαρμογή, που είναι η στιγμή που ένα deploy μπορεί να
+    // έχει μεσολαβήσει χωρίς να το ξέρεις.
+    checkForUpdate();
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") checkForUpdate();
+    });
     updateHeaderShrink();
 
     function returnToLogin(message = "") {

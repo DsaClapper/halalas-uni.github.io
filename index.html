@@ -944,7 +944,12 @@
         setDashboardStatus("Ανανέωση δεδομένων...");
 
         try {
-            const response = await fetch(`${authBaseUrl}/session`, {
+            // /auth/session επιστρέφει το στιγμιότυπο του login και δεν
+            // ξαναρωτάει ποτέ — γι' αυτό ένας βαθμός που βγήκε μετά τη
+            // σύνδεση έμενε αόρατος όσο κι αν πατούσες «Ανανέωση».
+            // Το /auth/refresh πηγαίνει όντως στο Moodle και στο eduportal.
+            const response = await fetch(`${authBaseUrl}/refresh`, {
+                method: "POST",
                 credentials: "include",
             });
             const data = await response.json();
@@ -957,8 +962,20 @@
             if (!response.ok || !data.ok) throw new Error("REFRESH_FAILED");
 
             renderDashboardData(data, true);
-            setDashboardStatus("");
             setLastUpdated();
+
+            // Μια ανανέωση που δεν μπόρεσε να διαβάσει τους επίσημους βαθμούς
+            // πρέπει να το πει. Αλλιώς κοιτάς μια οθόνη που μόλις «ανανεώθηκε»
+            // και συμπεραίνεις ότι δεν βγήκε τίποτα — που μπορεί να μην ισχύει.
+            const official = data.refreshed && data.refreshed.official;
+            setDashboardStatus(
+                official
+                    ? ""
+                    : data.officialRefreshable === false
+                      ? "Οι επίσημοι βαθμοί δεν ανανεώθηκαν — άνοιξε τις ειδοποιήσεις για να γίνεται αυτόματα."
+                      : "Το eduportal δεν απάντησε· οι επίσημοι βαθμοί είναι από την τελευταία επιτυχή ανάγνωση.",
+                !official
+            );
         } catch (error) {
             setDashboardStatus(
                 error.message === "RATE_LIMITED"
@@ -970,6 +987,14 @@
             refreshButton.disabled = false;
         }
     }
+
+    // Το κουμπί δεν είχε ποτέ listener: η refreshDashboardData καλούνταν μόνο
+    // από το pull-to-refresh, και το «Ανανέωση» του toolbar ήταν διακοσμητικό.
+    // Γι' αυτό «δοκίμασα και Ανανέωση» δεν άλλαξε τίποτα — δεν έτρεχε καν ο
+    // άχρηστος κύκλος που περιέγραφα, δεν έτρεχε τίποτα.
+    document.getElementById("refreshBtn").addEventListener("click", () => {
+        refreshDashboardData();
+    });
 
     // ------------------------------------------------------------------ Tabs
     // Οι τέσσερις ενότητες έφταναν τις 6 οθόνες scroll σε κινητό με ανοιχτά

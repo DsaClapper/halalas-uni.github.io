@@ -560,8 +560,15 @@
         }).format(new Date(lastUpdatedAt));
     }
 
-    function setLastUpdated() {
-        lastUpdatedAt = Date.now();
+    // Παίρνει ΠΟΤΕ διαβάστηκαν τα δεδομένα, όχι πότε ζωγραφίστηκε η οθόνη.
+    // Έβαζε `Date.now()` σε κάθε render, οπότε μια επαναφερμένη συνεδρία — που
+    // επιστρέφει το στιγμιότυπο του login και δεν ξαναρωτάει ποτέ — έλεγε
+    // «Ενημερώθηκε μόλις τώρα» για δεδομένα έως 24 ωρών. Ακριβώς η ετικέτα που
+    // θα σε καθησύχαζε τη στιγμή που έψαχνες τον βαθμό που δεν εμφανιζόταν.
+    function setLastUpdated(iso) {
+        const parsed = iso ? new Date(iso).getTime() : NaN;
+        // Παλιότερο backend χωρίς fetchedAt: καλύτερα τίποτα παρά ψέμα.
+        lastUpdatedAt = Number.isNaN(parsed) ? null : parsed;
         paintLastUpdated();
     }
 
@@ -906,10 +913,23 @@
         loginAttempt++;
         dashboardReady = false;
         loaderRunId++;
-        fetch(`${authBaseUrl}/logout`, {
-            credentials: "include",
-            method: "POST",
-        }).catch(() => {});
+
+        // Περιμένουμε την απάντηση αντί να την πετάμε σε ένα σιωπηλό catch.
+        // Αν ο server δεν τη λάβει, η συνεδρία μένει ζωντανή στην πλευρά του
+        // για 24 ώρες ενώ εσύ νομίζεις ότι βγήκες — σε κοινόχρηστη συσκευή
+        // αυτή η διαφορά μετράει, οπότε λέγεται. Με όριο 5'' για να μη μείνει
+        // το UI κολλημένο σε ένα δίκτυο που δεν απαντά.
+        let signedOutOnServer = true;
+        try {
+            const response = await fetch(`${authBaseUrl}/logout`, {
+                credentials: "include",
+                method: "POST",
+                signal: AbortSignal.timeout(5000),
+            });
+            signedOutOnServer = response.ok;
+        } catch {
+            signedOutOnServer = false;
+        }
 
         document.body.classList.remove("dashboard-mode");
         document.body.style.overflow = "hidden";
@@ -932,6 +952,11 @@
                 currentData = null;
                 notificationSetupPromise = null;
                 notificationToggleInput.checked = false;
+                setLoginStatus(
+                    signedOutOnServer
+                        ? ""
+                        : "Βγήκες από αυτή τη συσκευή, αλλά ο server δεν απάντησε — η συνεδρία μπορεί να είναι ακόμα ενεργή."
+                );
                 $(".login-wrapper").stop(true, true).fadeIn(250);
         });
     });
@@ -954,15 +979,21 @@
             });
             const data = await response.json();
 
-            if (response.status === 429) throw new Error("RATE_LIMITED");
+            if (response.status === 429) {
+                // Δύο περιπτώσεις: ή ήρθες πολύ γρήγορα, ή τρέχει ήδη μία
+                // ανανέωση (διπλό πάτημα / pull πάνω σε κουμπί). Η δεύτερη δεν
+                // είναι σφάλμα — απλώς περίμενε.
+                throw new Error(data.code === "REFRESH_IN_PROGRESS" ? "IN_PROGRESS" : "RATE_LIMITED");
+            }
             if (response.status === 401) {
                 returnToLogin("Η σύνδεση έληξε. Συνδέσου ξανά.");
                 return;
             }
             if (!response.ok || !data.ok) throw new Error("REFRESH_FAILED");
 
+            // Η φρεσκάδα έρχεται από τον server (fetchedAt) μέσα από το
+            // renderDashboardData — δεν τη σφραγίζουμε εμείς εδώ.
             renderDashboardData(data, true);
-            setLastUpdated();
 
             // Μια ανανέωση που δεν μπόρεσε να διαβάσει τους επίσημους βαθμούς
             // πρέπει να το πει. Αλλιώς κοιτάς μια οθόνη που μόλις «ανανεώθηκε»
@@ -978,10 +1009,12 @@
             );
         } catch (error) {
             setDashboardStatus(
-                error.message === "RATE_LIMITED"
-                    ? "Πολλές προσπάθειες. Δοκιμάστε ξανά αργότερα."
-                    : "Η ανανέωση απέτυχε. Δοκιμάστε ξανά.",
-                true,
+                error.message === "IN_PROGRESS"
+                    ? "Η ανανέωση είναι ήδη σε εξέλιξη."
+                    : error.message === "RATE_LIMITED"
+                      ? "Πολλές προσπάθειες. Δοκιμάστε ξανά αργότερα."
+                      : "Η ανανέωση απέτυχε. Δοκιμάστε ξανά.",
+                error.message !== "IN_PROGRESS",
             );
         } finally {
             refreshButton.disabled = false;
@@ -1067,7 +1100,7 @@
 
         dashboardReady = true;
         setDashboardStatus("");
-        setLastUpdated();
+        setLastUpdated(responseData.fetchedAt);
 
         // Συμπλήρωση στοιχείων φοιτητή (πάνω δεξιά)
         document.getElementById("sdStudentName").textContent = user.fullName;
@@ -1444,8 +1477,9 @@
                 const items = buckets
                     .get(group.key)
                     .map((entry) => {
-                        const link = entry.url
-                            ? `<a class="sd-assignment-link" href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">Άνοιγμα στο Moodle<svg class="sd-link-icon" aria-hidden="true"><use href="#i-external-link"/></svg></a>`
+                        const href = safeUrl(entry.url);
+                        const link = href
+                            ? `<a class="sd-assignment-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Άνοιγμα στο Moodle<svg class="sd-link-icon" aria-hidden="true"><use href="#i-external-link"/></svg></a>`
                             : "";
                         const stamp = formatDueStamp(entry.dueAt);
 
@@ -1560,6 +1594,15 @@
         corrected: "Διόρθωση",
         changed: "Αλλαγή βαθμού", // ιστορικές εγγραφές πριν τον διαχωρισμό
     };
+
+    // Το escapeHtml σε εμποδίζει να βγεις από το attribute· δεν εμποδίζει το
+    // ίδιο το URL να είναι `javascript:`. Τα links τα φτιάχνει το Moodle, άρα
+    // δεν είναι εκμεταλλεύσιμο σήμερα — αλλά το να το εξαρτάς από αυτό είναι
+    // επιλογή, και κοστίζει τρεις γραμμές να μην το εξαρτάς.
+    function safeUrl(value) {
+        const raw = String(value ?? "").trim();
+        return /^https?:\/\//i.test(raw) ? raw : "";
+    }
 
     function escapeHtml(value) {
         return String(value ?? "").replace(/[&<>"']/g, (character) => ({

@@ -1354,6 +1354,7 @@
         { key: "today", label: "Σήμερα και αύριο" },
         { key: "week", label: "Αυτή την εβδομάδα" },
         { key: "later", label: "Αργότερα" },
+        { key: "upcoming", label: "Προσεχώς" },
         { key: "undated", label: "Χωρίς προθεσμία" },
         { key: "stale", label: "Πέρασαν πριν καιρό" },
         { key: "done", label: "Παραδομένες" },
@@ -1375,11 +1376,20 @@
     // Ό,τι μετράει σαν πραγματική εκκρεμότητα: αν είναι στον μετρητή, πρέπει
     // να μπορείς να κάνεις κάτι γι' αυτό.
     function activePending(now = Date.now()) {
-        return assignmentEntries.filter((entry) => !entry.submitted && !isStale(entry, now));
+        return assignmentEntries.filter((entry) => !entry.submitted && !isStale(entry, now) && !isNotOpenYet(entry, now));
+    }
+
+    // Η υποβολή δεν έχει ανοίξει ακόμα: δεν είναι τελειωμένη, αλλά ούτε
+    // εκκρεμότητα που μπορείς να πιάσεις σήμερα.
+    function isNotOpenYet(assignment, now) {
+        if (!assignment.notOpenYet || !assignment.dueAt) return false;
+        const due = new Date(assignment.dueAt).getTime();
+        return !Number.isNaN(due) && due >= now;
     }
 
     function groupFor(assignment, now) {
         if (assignment.submitted) return "done";
+        if (isNotOpenYet(assignment, now)) return "upcoming";
         if (isStale(assignment, now)) return "stale";
         if (!assignment.dueAt) return "undated";
 

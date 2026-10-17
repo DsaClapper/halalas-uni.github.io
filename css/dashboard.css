@@ -1736,3 +1736,305 @@
             font-size: 24px;
         }
     }
+
+    /* ------------------------------------------------ Φίλτρα και ομάδες
+       Βαθμοί: μπάρα αναζήτησης/κατάστασης που κολλάει πάνω όσο κυλάς, και
+       ενότητες ανά εξάμηνο που ανοιγοκλείνουν. Εκκρεμότητες: διακόπτης
+       «ανά προθεσμία / ανά μάθημα» και φίλτρο μαθήματος. */
+    .sd-wrapper .sd-filter-bar {
+        position: sticky;
+        top: -32px; /* όσο το padding-top του .sd-content, για να κολλάει στην άκρη */
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin: 0 -20px 18px;
+        padding: 12px 20px;
+        background: var(--panel-dark);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sd-wrapper .sd-search {
+        flex: 1 1 220px;
+        min-width: 0;
+        padding: 10px 14px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 999px;
+        background: var(--near-black-teal);
+        color: var(--off-white);
+        /* 16px και όχι λιγότερο: κάτω από αυτό το iOS κάνει zoom στο focus. */
+        font: 16px var(--font-body);
+    }
+
+    .sd-wrapper .sd-search::placeholder {
+        color: var(--cool-gray);
+    }
+
+    .sd-wrapper .sd-search:focus-visible {
+        border-color: var(--mint-teal);
+        outline: none;
+    }
+
+    .sd-wrapper .sd-chips {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        /* Σε στενή οθόνη τα κουμπιά κυλάνε οριζόντια αντί να σπάνε σε δύο
+           σειρές· η μπάρα μένει έτσι χαμηλή, που μετράει όταν κολλάει πάνω. */
+        flex: 1 1 auto;
+    }
+
+    .sd-wrapper .sd-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sd-wrapper .sd-chip,
+    .sd-wrapper .sd-segment {
+        flex: none;
+        padding: 7px 12px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 999px;
+        background: var(--near-black-teal);
+        color: var(--pale-mint);
+        font: 600 12px var(--font-body);
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .sd-wrapper .sd-chip span {
+        margin-left: 4px;
+        color: var(--cool-gray);
+        font: 11px var(--font-data);
+    }
+
+    .sd-wrapper .sd-chip.is-active,
+    .sd-wrapper .sd-segment.is-active {
+        border-color: var(--mint-teal);
+        background: rgba(94, 234, 212, 0.14);
+        color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-chip.is-active span {
+        color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-chip:focus-visible,
+    .sd-wrapper .sd-segment:focus-visible {
+        outline: 2px solid var(--mint-teal);
+        outline-offset: 2px;
+    }
+
+    .sd-wrapper .sd-filter-bar .sd-history-filter {
+        flex: 0 1 auto;
+    }
+
+    .sd-wrapper .sd-grade-section {
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--near-black-teal);
+    }
+
+    .sd-wrapper .sd-grade-section + .sd-grade-section {
+        margin-top: 14px;
+    }
+
+    .sd-wrapper .sd-grade-section-summary {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        padding: 14px 16px;
+        color: var(--off-white);
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .sd-wrapper .sd-grade-section-summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .sd-wrapper .sd-grade-section-title {
+        font: 600 15px var(--font-heading);
+        color: var(--pale-mint);
+    }
+
+    .sd-wrapper .sd-grade-section-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        flex: 1 1 auto;
+    }
+
+    .sd-wrapper .sd-grade-section-facts span {
+        padding: 1px 8px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 999px;
+        color: var(--cool-gray);
+        font: 11px var(--font-data);
+    }
+
+    .sd-wrapper .sd-grade-section-summary .sd-chevron {
+        margin-left: auto;
+        color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-grade-section[open] > .sd-grade-section-summary .sd-chevron {
+        transform: rotate(180deg);
+    }
+
+    .sd-wrapper .sd-grade-section[open] > .sd-grade-section-summary {
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sd-wrapper .sd-grade-section > .sd-courses-row {
+        padding: 16px;
+    }
+
+    .sd-wrapper .sd-card-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 18px;
+    }
+
+    .sd-wrapper .sd-pending-link {
+        color: #ffc46b;
+    }
+
+    .sd-wrapper .sd-no-grades .sd-history-link {
+        display: block;
+        margin: 10px auto 0;
+    }
+
+    .sd-wrapper .sd-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .sd-wrapper .sd-segmented {
+        display: inline-flex;
+        gap: 4px;
+        padding: 3px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 999px;
+        background: var(--near-black-teal);
+    }
+
+    /* Το ενεργό κομμάτι γεμίζει, το άλλο μένει χωρίς πλαίσιο: δύο
+       περιγράμματα δίπλα-δίπλα δεν λένε ποιο είναι πατημένο. */
+    .sd-wrapper .sd-segmented .sd-segment {
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--cool-gray);
+    }
+
+    .sd-wrapper .sd-segmented .sd-segment.is-active {
+        border-color: var(--mint-teal);
+        background: var(--mint-teal);
+        color: var(--near-black-teal);
+    }
+
+    .sd-wrapper .sd-filter-row .sd-history-filter {
+        flex: 1 1 180px;
+        max-width: 320px;
+    }
+
+    .sd-wrapper .sd-course-group-title {
+        flex-wrap: wrap;
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 14px;
+    }
+
+    .sd-wrapper .sd-course-group-name {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .sd-wrapper .sd-course-group-next {
+        color: var(--cool-gray);
+        font: 12px var(--font-body);
+    }
+
+    .sd-wrapper .sd-course-group.is-overdue .sd-course-group-next {
+        color: #ffb7b7;
+    }
+
+    @media (max-width: 600px) {
+        /* Όταν κολλάει πάνω, κάθε pixel της μπάρας λείπει από τους βαθμούς:
+           αναζήτηση και κατηγορία στην ίδια γραμμή, τα κουμπιά από κάτω. */
+        .sd-wrapper .sd-filter-bar {
+            margin-left: -20px;
+            margin-right: -20px;
+            padding: 10px 16px;
+            gap: 8px;
+        }
+
+        .sd-wrapper .sd-search {
+            flex: 1 1 0;
+            padding: 8px 14px;
+        }
+
+        .sd-wrapper .sd-filter-bar .sd-history-filter {
+            flex: 0 1 40%;
+            max-width: 40%;
+            padding: 9px 10px;
+        }
+
+        /* Και τα τέσσερα πρέπει να φαίνονται χωρίς οριζόντιο scroll: ένα
+           «Χρωστούμενα» κομμένο στην άκρη είναι φίλτρο που κανείς δεν βρίσκει. */
+        .sd-wrapper .sd-chips {
+            order: 1;
+            flex-basis: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            overflow: visible;
+        }
+
+        /* Ο αριθμός πάει κάτω από τη λέξη: έτσι χωράνε τέσσερα σε μία γραμμή
+           ακόμα και σε 375px, αντί να σπάσει το «Χρωστούμενα» σε δεύτερη. */
+        .sd-wrapper .sd-chip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+            min-width: 0;
+            padding: 5px 2px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .sd-wrapper .sd-chip span {
+            margin-left: 0;
+            font-size: 10px;
+        }
+
+        .sd-wrapper .sd-filter-row .sd-history-filter {
+            flex: 1 1 100%;
+            max-width: none;
+        }
+
+        .sd-wrapper .sd-segmented {
+            width: 100%;
+        }
+
+        .sd-wrapper .sd-segment {
+            flex: 1 1 0;
+        }
+
+        .sd-wrapper .sd-grade-section > .sd-courses-row {
+            padding: 12px;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .sd-wrapper .sd-chip {
+            font-size: 10px;
+        }
+    }

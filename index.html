@@ -25,7 +25,7 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260930d" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20261017" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20261017d" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Χωρίς αυτό το iOS διαλέγει μόνο του πώς φέρεται η status bar στην
@@ -220,6 +220,18 @@
                         </button>
                     </div>
                 </div>
+                <!-- Δύο προβολές της ίδιας λίστας. Η «ανά προθεσμία» μένει
+                     πρώτη επειδή αυτή σε σώζει από χαμένη παράδοση· η «ανά
+                     μάθημα» είναι για όταν κάθεσαι να δουλέψεις ένα μάθημα. -->
+                <div class="sd-filter-row">
+                    <div class="sd-segmented" role="group" aria-label="Ομαδοποίηση εκκρεμοτήτων">
+                        <button type="button" class="sd-segment is-active" data-view="due" aria-pressed="true">Ανά προθεσμία</button>
+                        <button type="button" class="sd-segment" data-view="course" aria-pressed="false">Ανά μάθημα</button>
+                    </div>
+                    <select class="sd-history-filter" id="assignmentsCourseFilter" aria-label="Φίλτρο μαθήματος">
+                        <option value="">Όλα τα μαθήματα</option>
+                    </select>
+                </div>
                 <p class="sd-history-note" id="assignmentsNote" role="status" aria-live="polite" hidden></p>
                 <div class="sd-assignments-list" id="sdAssignmentsList">
                     <!-- Οι εκκρεμότητες φορτώνονται μέσω JS -->
@@ -232,6 +244,21 @@
                     βαθμός από το <strong>elearn (Moodle)</strong> φαίνεται δίπλα του — τον συντηρεί ο διδάσκων
                     και αλλάζει μέσα στο εξάμηνο, οπότε οι δύο αριθμοί συχνά διαφέρουν.
                 </p>
+                <!-- Κολλάει στην κορυφή όσο κυλάς, ώστε να αλλάζεις φίλτρο χωρίς
+                     να ανεβαίνεις πάλι πάνω. -->
+                <div class="sd-filter-bar" id="gradesFilterBar">
+                    <input type="search" class="sd-search" id="gradesSearch" autocomplete="off"
+                           placeholder="Αναζήτηση…" aria-label="Αναζήτηση μαθήματος" />
+                    <div class="sd-chips" role="group" aria-label="Κατάσταση μαθήματος" id="gradesStatusChips">
+                        <button type="button" class="sd-chip is-active" data-status="all" aria-pressed="true">Όλα <span></span></button>
+                        <button type="button" class="sd-chip" data-status="current" aria-pressed="false">Τρέχοντα <span></span></button>
+                        <button type="button" class="sd-chip" data-status="passed" aria-pressed="false">Περασμένα <span></span></button>
+                        <button type="button" class="sd-chip" data-status="owed" aria-pressed="false">Χρωστούμενα <span></span></button>
+                    </div>
+                    <select class="sd-history-filter" id="gradesCategoryFilter" aria-label="Κατηγορία μαθήματος" hidden>
+                        <option value="">Κατηγορία</option>
+                    </select>
+                </div>
                 <div class="sd-courses-grid" id="sdGradesGrid">
                     <!-- Οι κάρτες φορτώνονται μέσω JS -->
                 </div>
@@ -927,6 +954,10 @@
                 document.getElementById("sdHistoryTimeline").innerHTML = "";
                 historyEntries = [];
                 historyEnabled = false;
+                gradesSearch.value = "";
+                gradesFilter.query = "";
+                assignmentsCourse = "";
+                gradeSectionOpen.clear();
                 historyToggleInput.checked = false;
                 historyFilter.innerHTML = `<option value="">Όλα τα μαθήματα</option>`;
                 setHistoryNote("");
@@ -1212,8 +1243,17 @@
                 </div>`;
         }
 
+        // Πόσες εκκρεμότητες έχει το μάθημα, με σύνδεσμο στη λίστα τους
+        // φιλτραρισμένη. Μετράει μόνο ό,τι μετράει και το σήμα του tab.
+        const pendingHere = activePending().filter((a) => courseKey(a.courseName) === entry.key).length;
+        const actions = [
+            pendingHere > 0
+                ? `<button class="sd-history-link sd-pending-link" type="button">${pendingHere} ${pendingHere === 1 ? "εκκρεμότητα" : "εκκρεμότητες"}</button>`
+                : "",
+            entry.official ? `<button class="sd-history-link sd-course-history-link" type="button">Ιστορικό μαθήματος</button>` : "",
+        ].filter(Boolean);
         html += `
-                ${entry.official ? `<button class="sd-history-link" type="button">Ιστορικό μαθήματος</button>` : ""}
+                ${actions.length ? `<div class="sd-card-links">${actions.join("")}</div>` : ""}
             </div>`;
 
         if (moodleGrades.length > 0) {
@@ -1245,12 +1285,120 @@
             });
         }
 
-        const historyLink = card.querySelector(".sd-history-link");
+        const historyLink = card.querySelector(".sd-course-history-link");
         if (historyLink) {
             historyLink.addEventListener("click", () => openHistoryFor(official.courseCode));
         }
+        const pendingLink = card.querySelector(".sd-pending-link");
+        if (pendingLink) {
+            pendingLink.addEventListener("click", () => openAssignmentsFor(entry.key));
+        }
 
         return card;
+    }
+
+    // ------------------------------------------------- Βαθμοί: φίλτρα, εξάμηνα
+    // Ομαδοποίηση ανά εξάμηνο σπουδών (1ο–8ο) όταν το eduportal το δίνει, στο
+    // πεδίο `curriculumSemester`. Αν λείπει από όλα τα μαθήματα πέφτουμε στο
+    // παλιό «Τρέχοντα / Παλαιότερα» αντί να το μαντέψουμε από τον κωδικό:
+    // ένα μάθημα σε λάθος εξάμηνο είναι χειρότερο από καθόλου εξάμηνο.
+    const gradesSearch = document.getElementById("gradesSearch");
+    const gradesStatusChips = document.getElementById("gradesStatusChips");
+    const gradesCategoryFilter = document.getElementById("gradesCategoryFilter");
+    const GRADES_FILTER_KEY = "halalas_grades_filters";
+
+    const gradesFilter = { status: "all", category: "", query: "" };
+    try {
+        const saved = JSON.parse(localStorage.getItem(GRADES_FILTER_KEY) || "{}");
+        if (["all", "current", "passed", "owed"].includes(saved.status)) gradesFilter.status = saved.status;
+        if (typeof saved.category === "string") gradesFilter.category = saved.category;
+    } catch {
+        // χωρίς αποθηκευμένα φίλτρα, ξεκινάμε από «Όλα»
+    }
+
+    function saveGradesFilter() {
+        try {
+            localStorage.setItem(
+                GRADES_FILTER_KEY,
+                JSON.stringify({ status: gradesFilter.status, category: gradesFilter.category }),
+            );
+        } catch {
+            // αγνόησέ το
+        }
+    }
+
+    // Ποιες ενότητες άνοιξε ή έκλεισε ο χρήστης σε αυτή την επίσκεψη. Χωρίς
+    // αυτό κάθε re-render (π.χ. μόλις έρθουν οι εκκρεμότητες) θα τις
+    // ξανάκλεινε κάτω από τα δάχτυλά του.
+    const gradeSectionOpen = new Map();
+
+    function semesterOf(entry) {
+        const value = entry.official ? Number(entry.official.curriculumSemester) : NaN;
+        return Number.isInteger(value) && value > 0 ? value : null;
+    }
+
+    function statusOf(entry) {
+        return {
+            current: Boolean(entry.moodle),
+            passed: Boolean(entry.official && entry.official.isPassed),
+            owed: Boolean(entry.official && !entry.official.isPassed),
+        };
+    }
+
+    function matchesStatus(entry, status) {
+        return status === "all" || statusOf(entry)[status];
+    }
+
+    function matchesQuery(entry, query) {
+        if (!query) return true;
+        const haystack = [
+            entry.code,
+            entry.official && entry.official.title,
+            entry.moodle && entry.moodle.name,
+        ]
+            .filter(Boolean)
+            .join(" ");
+        return normalizeForSearch(haystack).includes(query);
+    }
+
+    // Χωρίς τόνους και πεζά, ώστε το «δομες» να βρίσκει «Δομές».
+    function normalizeForSearch(value) {
+        return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
+
+    // Ο ίδιος υπολογισμός με τη σύνοψη: σταθμισμένος με ECTS όταν υπάρχουν,
+    // απλός όταν λείπουν, και μόνο από περασμένα με επίσημο βαθμό.
+    function sectionAverage(entries) {
+        const graded = entries
+            .map((entry) => entry.official)
+            .filter((c) => c && c.isPassed && c.grade !== null && c.grade !== undefined);
+        if (graded.length === 0) return null;
+        const weights = graded.map((c) => Number(c.ects) || 0);
+        const weighted = weights.every((w) => w > 0);
+        const total = graded.reduce((sum, c, i) => sum + Number(c.grade) * (weighted ? weights[i] : 1), 0);
+        const divisor = weighted ? weights.reduce((a, b) => a + b, 0) : graded.length;
+        return total / divisor;
+    }
+
+    function paintGradesFilterControls(all) {
+        gradesStatusChips.querySelectorAll(".sd-chip").forEach((chip) => {
+            const active = chip.dataset.status === gradesFilter.status;
+            chip.classList.toggle("is-active", active);
+            chip.setAttribute("aria-pressed", String(active));
+            const count = all.filter((entry) => matchesStatus(entry, chip.dataset.status)).length;
+            chip.querySelector("span").textContent = String(count);
+        });
+
+        const categories = [...new Set(all.map((e) => e.official && e.official.category).filter(Boolean))].sort((a, b) =>
+            a.localeCompare(b, "el"),
+        );
+        // Μία μόνο κατηγορία = φίλτρο που δεν φιλτράρει τίποτα.
+        gradesCategoryFilter.hidden = categories.length < 2;
+        if (!categories.includes(gradesFilter.category)) gradesFilter.category = "";
+        gradesCategoryFilter.innerHTML =
+            `<option value="">Κατηγορία: όλες</option>` +
+            categories.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+        gradesCategoryFilter.value = gradesFilter.category;
     }
 
     function renderGrades(data) {
@@ -1258,28 +1406,119 @@
         grid.innerHTML = "";
 
         const { current, past } = mergeGradeSources(data);
+        const all = [...current, ...past];
+        paintGradesFilterControls(all);
 
-        if (current.length === 0 && past.length === 0) {
+        if (all.length === 0) {
             grid.innerHTML = `<div class="sd-no-grades">Δεν βρέθηκαν μαθήματα για τον λογαριασμό σου.</div>`;
             return;
         }
 
-        const section = (label, entries) => {
-            if (entries.length === 0) return;
-            const heading = document.createElement("h3");
-            heading.className = "sd-grades-group-title";
-            heading.innerHTML = `${escapeHtml(label)} <span class="sd-assignment-group-count">${entries.length}</span>`;
-            grid.appendChild(heading);
+        const query = normalizeForSearch(gradesFilter.query);
+        const keep = (entry) =>
+            matchesStatus(entry, gradesFilter.status) &&
+            (!gradesFilter.category || (entry.official && entry.official.category === gradesFilter.category)) &&
+            matchesQuery(entry, query);
 
+        const bySemester = all.some((entry) => semesterOf(entry) !== null);
+        let sections;
+        if (bySemester) {
+            const buckets = new Map();
+            for (const entry of all) {
+                const semester = semesterOf(entry);
+                const key = semester === null ? "none" : `s${semester}`;
+                if (!buckets.has(key)) buckets.set(key, { key, semester, entries: [] });
+                buckets.get(key).entries.push(entry);
+            }
+            sections = [...buckets.values()]
+                .sort((a, b) => (a.semester ?? 99) - (b.semester ?? 99))
+                .map((b) => ({
+                    key: b.key,
+                    label: b.semester === null ? "Χωρίς εξάμηνο" : `${b.semester}ο εξάμηνο`,
+                    entries: b.entries,
+                }));
+        } else {
+            sections = [
+                { key: "current", label: "Τρέχοντα μαθήματα", entries: current },
+                { key: "past", label: "Παλαιότερα", entries: past },
+            ];
+        }
+
+        // Με ενεργό φίλτρο ή αναζήτηση ανοίγουν όλα όσα ταιριάζουν: αν ψάχνεις
+        // κάτι, το να είναι κρυμμένο σε κλειστή ενότητα είναι σαν να λείπει.
+        const filtering = Boolean(query) || gradesFilter.status !== "all" || Boolean(gradesFilter.category);
+        let shown = 0;
+
+        for (const section of sections) {
+            const visible = section.entries.filter(keep);
+            if (visible.length === 0) continue;
+            shown += visible.length;
+
+            const average = sectionAverage(section.entries);
+            const ects = section.entries
+                .filter((e) => e.official && e.official.isPassed)
+                .reduce((sum, e) => sum + (Number(e.official.ects) || 0), 0);
+            const hasCurrent = section.entries.some((e) => e.moodle);
+            const defaultOpen = !bySemester ? section.key === "current" || !current.length : hasCurrent;
+            const open = filtering || (gradeSectionOpen.has(section.key) ? gradeSectionOpen.get(section.key) : defaultOpen);
+
+            const details = document.createElement("details");
+            details.className = "sd-grade-section";
+            details.open = open;
+            const facts = [
+                `${visible.length}${visible.length !== section.entries.length ? ` από ${section.entries.length}` : ""} μαθ.`,
+                average !== null ? `ΜΟ ${average.toFixed(2)}` : "",
+                ects > 0 ? `${ects} ECTS` : "",
+            ].filter(Boolean);
+            details.innerHTML = `
+                <summary class="sd-grade-section-summary">
+                    <span class="sd-grade-section-title">${escapeHtml(section.label)}</span>
+                    <span class="sd-grade-section-facts">${facts.map((f) => `<span>${escapeHtml(f)}</span>`).join("")}</span>
+                    <svg class="sd-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+                </summary>`;
             const row = document.createElement("div");
             row.className = "sd-courses-row";
-            entries.forEach((entry) => row.appendChild(buildGradeCard(entry)));
-            grid.appendChild(row);
-        };
+            visible.forEach((entry) => row.appendChild(buildGradeCard(entry)));
+            details.appendChild(row);
+            details.addEventListener("toggle", () => {
+                if (!filtering) gradeSectionOpen.set(section.key, details.open);
+            });
+            grid.appendChild(details);
+        }
 
-        section("Τρέχοντα μαθήματα", current);
-        section("Παλαιότερα", past);
+        if (shown === 0) {
+            grid.innerHTML = `
+                <div class="sd-no-grades">
+                    Κανένα μάθημα δεν ταιριάζει στα φίλτρα.
+                    <button type="button" class="sd-history-link" id="gradesResetFilters">Καθαρισμός φίλτρων</button>
+                </div>`;
+            document.getElementById("gradesResetFilters").addEventListener("click", () => {
+                gradesFilter.status = "all";
+                gradesFilter.category = "";
+                gradesFilter.query = "";
+                gradesSearch.value = "";
+                saveGradesFilter();
+                renderGrades(currentData);
+            });
+        }
     }
+
+    gradesSearch.addEventListener("input", () => {
+        gradesFilter.query = gradesSearch.value;
+        if (currentData) renderGrades(currentData);
+    });
+    gradesStatusChips.addEventListener("click", (event) => {
+        const chip = event.target.closest(".sd-chip");
+        if (!chip) return;
+        gradesFilter.status = chip.dataset.status;
+        saveGradesFilter();
+        if (currentData) renderGrades(currentData);
+    });
+    gradesCategoryFilter.addEventListener("change", () => {
+        gradesFilter.category = gradesCategoryFilter.value;
+        saveGradesFilter();
+        if (currentData) renderGrades(currentData);
+    });
 
     // Από την κάρτα ενός μαθήματος στο ιστορικό του: αλλάζει tab και εφαρμόζει
     // το φίλτρο, ώστε να μη χρειάζεται να το ξαναβρείς μόνος σου στη λίστα.
@@ -1310,6 +1549,18 @@
 
     let assignmentEntries = [];
     let assignmentsAvailable = false;
+
+    const assignmentsCourseFilter = document.getElementById("assignmentsCourseFilter");
+    const ASSIGNMENTS_VIEW_KEY = "halalas_assignments_view";
+    // Το φίλτρο μαθήματος δεν αποθηκεύεται: αν το βρεις ενεργό αύριο θα
+    // νομίζεις ότι εξαφανίστηκαν οι μισές προθεσμίες. Η προβολή αποθηκεύεται.
+    let assignmentsCourse = "";
+    let assignmentsView = "due";
+    try {
+        if (localStorage.getItem(ASSIGNMENTS_VIEW_KEY) === "course") assignmentsView = "course";
+    } catch {
+        // αγνόησέ το
+    }
 
     const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -1438,65 +1689,158 @@
         }
 
         const now = Date.now();
+        paintAssignmentsCourseFilter();
         // Ο ίδιος διακόπτης δείχνει και τα παραδομένα και τα πολύ παλιά: και
         // τα δύο είναι «τελειωμένα, αν τα ψάχνεις είναι εδώ».
         const showAll = assignmentsShowDoneInput.checked;
-        const visible = showAll
+        const visible = (showAll
             ? assignmentEntries
-            : assignmentEntries.filter((entry) => !entry.submitted && !isStale(entry, now));
+            : assignmentEntries.filter((entry) => !entry.submitted && !isStale(entry, now))
+        ).filter((entry) => !assignmentsCourse || assignmentCourseKey(entry) === assignmentsCourse);
 
         if (visible.length === 0) {
             assignmentsList.innerHTML = `<div class="sd-no-grades">${
                 assignmentEntries.length === 0
                     ? "Δεν βρέθηκαν εργασίες με προθεσμία στο Moodle."
-                    : "Καμία εκκρεμότητα — όλα τακτοποιημένα."
+                    : assignmentsCourse
+                      ? "Καμία εκκρεμότητα σε αυτό το μάθημα."
+                      : "Καμία εκκρεμότητα — όλα τακτοποιημένα."
             }</div>`;
             return;
         }
+
+        assignmentsList.innerHTML =
+            assignmentsView === "course" ? renderAssignmentsByCourse(visible, now) : renderAssignmentsByDue(visible, now);
+    }
+
+    function assignmentItemHtml(entry, groupKey, now) {
+        const link = entry.url
+            ? `<a class="sd-assignment-link" href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">Άνοιγμα στο Moodle<svg class="sd-link-icon" aria-hidden="true"><use href="#i-external-link"/></svg></a>`
+            : "";
+        const stamp = formatDueStamp(entry.dueAt);
+        // Στην προβολή ανά μάθημα το όνομα του μαθήματος είναι ήδη ο τίτλος
+        // της ομάδας· δεύτερη φορά σε κάθε γραμμή θα ήταν θόρυβος.
+        const course = assignmentsView === "course" ? "" : `<div class="sd-assignment-course">${escapeHtml(entry.courseName)}</div>`;
+
+        return `
+            <article class="sd-assignment is-${escapeHtml(groupKey)}">
+                <div class="sd-assignment-main">
+                    <div class="sd-assignment-name">${escapeHtml(entry.name)}</div>
+                    ${course}
+                </div>
+                <div class="sd-assignment-due">
+                    <span class="sd-assignment-relative">${escapeHtml(describeDue(entry.dueAt, now))}</span>
+                    ${stamp ? `<time datetime="${escapeHtml(entry.dueAt)}">${escapeHtml(stamp)}</time>` : ""}
+                    ${link}
+                </div>
+            </article>`;
+    }
+
+    function renderAssignmentsByDue(visible, now) {
         const buckets = new Map(ASSIGNMENT_GROUPS.map((group) => [group.key, []]));
         visible.forEach((entry) => buckets.get(groupFor(entry, now)).push(entry));
 
-        assignmentsList.innerHTML = ASSIGNMENT_GROUPS.filter((group) => buckets.get(group.key).length > 0)
-            .map((group) => {
-                const items = buckets
-                    .get(group.key)
-                    .map((entry) => {
-                        const link = entry.url
-                            ? `<a class="sd-assignment-link" href="${escapeHtml(entry.url)}" target="_blank" rel="noopener noreferrer">Άνοιγμα στο Moodle<svg class="sd-link-icon" aria-hidden="true"><use href="#i-external-link"/></svg></a>`
-                            : "";
-                        const stamp = formatDueStamp(entry.dueAt);
-
-                        return `
-                            <article class="sd-assignment is-${escapeHtml(group.key)}">
-                                <div class="sd-assignment-main">
-                                    <div class="sd-assignment-name">${escapeHtml(entry.name)}</div>
-                                    <div class="sd-assignment-course">${escapeHtml(entry.courseName)}</div>
-                                </div>
-                                <div class="sd-assignment-due">
-                                    <span class="sd-assignment-relative">${escapeHtml(describeDue(entry.dueAt, now))}</span>
-                                    ${stamp ? `<time datetime="${escapeHtml(entry.dueAt)}">${escapeHtml(stamp)}</time>` : ""}
-                                    ${link}
-                                </div>
-                            </article>`;
-                    })
-                    .join("");
-
-                return `
+        return ASSIGNMENT_GROUPS.filter((group) => buckets.get(group.key).length > 0)
+            .map((group) => `
                     <div class="sd-assignment-group is-${escapeHtml(group.key)}">
                         <h3 class="sd-assignment-group-title">
                             ${escapeHtml(group.label)}
                             <span class="sd-assignment-group-count">${buckets.get(group.key).length}</span>
                         </h3>
-                        ${items}
+                        ${buckets.get(group.key).map((entry) => assignmentItemHtml(entry, group.key, now)).join("")}
+                    </div>`)
+            .join("");
+    }
+
+    // Ένα μάθημα ανά ομάδα, το πιο πιεστικό πρώτο. «Πιεστικό» με την ίδια
+    // σειρά που έχουν οι ομάδες της άλλης προβολής (εκπρόθεσμη πριν από
+    // «σήμερα», «σήμερα» πριν από «αυτή την εβδομάδα»...), και μέσα στην ίδια
+    // βαθμίδα όποιο λήγει πρώτο.
+    function renderAssignmentsByCourse(visible, now) {
+        const rank = new Map(ASSIGNMENT_GROUPS.map((group, i) => [group.key, i]));
+        const dueTime = (entry) => {
+            const t = entry.dueAt ? new Date(entry.dueAt).getTime() : NaN;
+            return Number.isNaN(t) ? Infinity : t;
+        };
+        const urgency = (entry) => [rank.get(groupFor(entry, now)), dueTime(entry)];
+        const compare = (a, b) => {
+            const [ra, ta] = urgency(a);
+            const [rb, tb] = urgency(b);
+            return ra - rb || ta - tb;
+        };
+
+        const courses = new Map();
+        for (const entry of visible) {
+            const key = assignmentCourseKey(entry);
+            if (!courses.has(key)) courses.set(key, { name: entry.courseName, entries: [] });
+            courses.get(key).entries.push(entry);
+        }
+        const groups = [...courses.values()].map((course) => ({ ...course, entries: course.entries.sort(compare) }));
+        groups.sort((a, b) => compare(a.entries[0], b.entries[0]));
+
+        return groups
+            .map((course) => {
+                const first = course.entries[0];
+                const firstGroup = groupFor(first, now);
+                const pending = course.entries.filter(
+                    (e) => !e.submitted && !isStale(e, now) && !isNotOpenYet(e, now),
+                ).length;
+                const next = pending > 0 ? `επόμενη: ${describeDue(first.dueAt, now)}` : "";
+                return `
+                    <div class="sd-assignment-group sd-course-group is-${escapeHtml(firstGroup)}">
+                        <h3 class="sd-assignment-group-title sd-course-group-title">
+                            <span class="sd-course-group-name">${escapeHtml(course.name)}</span>
+                            <span class="sd-assignment-group-count">${course.entries.length}</span>
+                            ${next ? `<span class="sd-course-group-next">${escapeHtml(next)}</span>` : ""}
+                        </h3>
+                        ${course.entries.map((entry) => assignmentItemHtml(entry, groupFor(entry, now), now)).join("")}
                     </div>`;
             })
             .join("");
+    }
+
+    // Ίδιο κλειδί με τις κάρτες των βαθμών, ώστε ο σύνδεσμος «2 εκκρεμότητες»
+    // να καταλήγει στο σωστό φίλτρο.
+    function assignmentCourseKey(entry) {
+        return courseKey(entry.courseName) || String(entry.courseId ?? "");
+    }
+
+    function paintAssignmentsCourseFilter() {
+        const courses = new Map();
+        for (const entry of assignmentEntries) {
+            const key = assignmentCourseKey(entry);
+            if (key && !courses.has(key)) courses.set(key, entry.courseName || key);
+        }
+        if (assignmentsCourse && !courses.has(assignmentsCourse)) assignmentsCourse = "";
+        const options = [...courses.entries()].sort((a, b) => a[1].localeCompare(b[1], "el"));
+        assignmentsCourseFilter.innerHTML =
+            `<option value="">Όλα τα μαθήματα</option>` +
+            options.map(([key, name]) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`).join("");
+        assignmentsCourseFilter.value = assignmentsCourse;
+        assignmentsCourseFilter.disabled = options.length === 0;
+
+        document.querySelectorAll("#tabAssignments .sd-segment").forEach((button) => {
+            const active = button.dataset.view === assignmentsView;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", String(active));
+        });
+    }
+
+    // Από την κάρτα ενός μαθήματος στις εκκρεμότητές του, όπως το
+    // «Ιστορικό μαθήματος» πηγαίνει στο ιστορικό.
+    function openAssignmentsFor(key) {
+        assignmentsCourse = key;
+        selectTab("tabAssignments");
+        renderAssignments();
     }
 
     function applyAssignmentsPayload(data) {
         assignmentsAvailable = Boolean(data.available);
         assignmentEntries = Array.isArray(data.assignments) ? data.assignments : [];
         renderAssignments();
+        // Οι κάρτες των βαθμών δείχνουν πόσες εκκρεμότητες έχει το καθένα,
+        // και οι βαθμοί ζωγραφίζονται πριν φτάσουν οι εκκρεμότητες.
+        if (currentData) renderGrades(currentData);
     }
 
     async function loadAssignments() {
@@ -1550,6 +1894,21 @@
 
     assignmentsRefreshBtn.addEventListener("click", refreshAssignments);
     assignmentsShowDoneInput.addEventListener("change", renderAssignments);
+    assignmentsCourseFilter.addEventListener("change", () => {
+        assignmentsCourse = assignmentsCourseFilter.value;
+        renderAssignments();
+    });
+    document.querySelectorAll("#tabAssignments .sd-segment").forEach((button) => {
+        button.addEventListener("click", () => {
+            assignmentsView = button.dataset.view;
+            try {
+                localStorage.setItem(ASSIGNMENTS_VIEW_KEY, assignmentsView);
+            } catch {
+                // αγνόησέ το
+            }
+            renderAssignments();
+        });
+    });
 
     // ---------------------------------------------------------------- Ιστορικό
     // Δεδομένα από GET /history/eduportal: { ok, enabled, total, history: [...] }

@@ -16,7 +16,7 @@
     <title>Halalas University Portal</title>
     <link rel="icon" href="imgs/halalas-university-logo.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <script src="js/app-config.js?v=20260926" defer></script>
+    <script src="js/app-config.js?v=20261017" defer></script>
     <!-- ΣΗΜΑΝΤΙΚΟ: αυτό το ?v= είναι το μόνο που κάνει τον browser να
          ξανακατεβάσει ένα φύλλο στυλ. Το GitHub Pages στέλνει
          cache-control: max-age=14400, οπότε χωρίς αλλαγή εδώ το παλιό CSS
@@ -25,9 +25,16 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260930d" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20260930f" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20261017" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- Χωρίς αυτό το iOS διαλέγει μόνο του πώς φέρεται η status bar στην
+         εγκατεστημένη εφαρμογή, και στο iOS 26 διάλεξε το χειρότερο: σελίδα
+         κάτω από την ώρα και την μπαταρία, με safe-area-inset-top = 0, δηλαδή
+         το όνομα πάνω στο ρολόι. Το black-translucent το λέει ρητά (σελίδα
+         κάτω από τη μπάρα, λευκά γράμματα, που ταιριάζουν στη σκούρα
+         κεφαλίδα) και μαζί με το viewport-fit=cover δίνει σωστά inset. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Halalas University" />
     <meta name="apple-mobile-web-app-title" content="Halalas University" />

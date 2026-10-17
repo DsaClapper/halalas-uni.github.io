@@ -273,6 +273,54 @@
         outline: none;
     }
 
+    /* Στο κινητό το ονοματεπώνυμο, το λογότυπο και το κουμπί δεν χωράνε στα
+       μεγέθη του desktop: το όνομα έσπαγε σε τρεις γραμμές και το «Sign out»
+       σε δύο. Μικραίνουν όλα λίγο, και το κουμπί δεν σπάει ποτέ. */
+    @media (max-width: 520px) {
+        .sd-wrapper .sd-header {
+            padding-left: calc(16px + var(--safe-left));
+            padding-right: calc(16px + var(--safe-right));
+        }
+
+        body.is-scrolled .sd-wrapper .sd-header {
+            padding-left: calc(16px + var(--safe-left));
+            padding-right: calc(16px + var(--safe-right));
+        }
+
+        .sd-wrapper .sd-logo {
+            width: 64px;
+            flex-shrink: 0;
+        }
+
+        body.is-scrolled .sd-wrapper .sd-logo {
+            width: 48px;
+        }
+
+        .sd-wrapper .sd-header-actions {
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .sd-wrapper .sd-header h2 {
+            font-size: 16px;
+            line-height: 1.25;
+        }
+
+        body.is-scrolled .sd-wrapper .sd-header h2 {
+            font-size: 14px;
+        }
+
+        .sd-wrapper .sd-header p {
+            font-size: 12px;
+        }
+
+        .sd-wrapper .sd-signout-btn {
+            padding: 8px 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+    }
+
     /* Κυρίως περιεχόμενο (με Scroll) */
     .sd-wrapper .sd-content {
         position: relative;

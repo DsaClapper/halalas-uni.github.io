@@ -1298,10 +1298,10 @@
     }
 
     // ------------------------------------------------- Βαθμοί: φίλτρα, εξάμηνα
-    // Ομαδοποίηση ανά εξάμηνο σπουδών (1ο–8ο) όταν το eduportal το δίνει, στο
-    // πεδίο `curriculumSemester`. Αν λείπει από όλα τα μαθήματα πέφτουμε στο
-    // παλιό «Τρέχοντα / Παλαιότερα» αντί να το μαντέψουμε από τον κωδικό:
-    // ένα μάθημα σε λάθος εξάμηνο είναι χειρότερο από καθόλου εξάμηνο.
+    // Ομαδοποίηση ανά εξάμηνο του έτους (Χειμερινό / Εαρινό), όπως το γράφει το
+    // ίδιο το eduportal στο πεδίο `semester`. Τα μαθήματα του Moodle χωρίς
+    // επίσημη εγγραφή δεν έχουν εξάμηνο και πάνε σε δική τους ενότητα. Αν
+    // κανένα μάθημα δεν έχει εξάμηνο, πέφτουμε στο «Τρέχοντα / Παλαιότερα».
     const gradesSearch = document.getElementById("gradesSearch");
     const gradesStatusChips = document.getElementById("gradesStatusChips");
     const gradesCategoryFilter = document.getElementById("gradesCategoryFilter");
@@ -1332,9 +1332,11 @@
     // ξανάκλεινε κάτω από τα δάχτυλά του.
     const gradeSectionOpen = new Map();
 
+    const SEASON_ORDER = ["Χειμερινό", "Εαρινό"];
+
     function semesterOf(entry) {
-        const value = entry.official ? Number(entry.official.curriculumSemester) : NaN;
-        return Number.isInteger(value) && value > 0 ? value : null;
+        const value = entry.official && typeof entry.official.semester === "string" ? entry.official.semester.trim() : "";
+        return value || null;
     }
 
     function statusOf(entry) {
@@ -1426,15 +1428,26 @@
             const buckets = new Map();
             for (const entry of all) {
                 const semester = semesterOf(entry);
-                const key = semester === null ? "none" : `s${semester}`;
+                const key = semester === null ? "none" : `s:${semester}`;
                 if (!buckets.has(key)) buckets.set(key, { key, semester, entries: [] });
                 buckets.get(key).entries.push(entry);
             }
+            // Χειμερινό πριν από Εαρινό, ό,τι άλλο γράψει το eduportal μετά
+            // (αλφαβητικά), και τα χωρίς εξάμηνο στο τέλος.
+            const rank = (semester) => {
+                if (semester === null) return [2, ""];
+                const i = SEASON_ORDER.indexOf(semester);
+                return i === -1 ? [1, semester] : [0, String(i)];
+            };
             sections = [...buckets.values()]
-                .sort((a, b) => (a.semester ?? 99) - (b.semester ?? 99))
+                .sort((a, b) => {
+                    const [ga, na] = rank(a.semester);
+                    const [gb, nb] = rank(b.semester);
+                    return ga - gb || na.localeCompare(nb, "el");
+                })
                 .map((b) => ({
                     key: b.key,
-                    label: b.semester === null ? "Χωρίς εξάμηνο" : `${b.semester}ο εξάμηνο`,
+                    label: b.semester === null ? "Χωρίς εξάμηνο" : `${b.semester} εξάμηνο`,
                     entries: b.entries,
                 }));
         } else {
@@ -1450,7 +1463,11 @@
         let shown = 0;
 
         for (const section of sections) {
-            const visible = section.entries.filter(keep);
+            // Μέσα σε ένα εξάμηνο τα τρέχοντα πρώτα — είναι αυτά που ψάχνεις —
+            // και μετά τα υπόλοιπα, με τη σειρά του κωδικού (η sort είναι σταθερή).
+            const visible = section.entries
+                .filter(keep)
+                .sort((a, b) => (bySemester ? Number(Boolean(b.moodle)) - Number(Boolean(a.moodle)) : 0));
             if (visible.length === 0) continue;
             shown += visible.length;
 

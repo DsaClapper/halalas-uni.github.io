@@ -25,7 +25,7 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20260930d" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20261017d" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20261018" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Χωρίς αυτό το iOS διαλέγει μόνο του πώς φέρεται η status bar στην
@@ -239,6 +239,20 @@
             </section>
 
             <section class="sd-tabpanel" id="tabGrades" role="tabpanel" aria-labelledby="tabBtnGrades" hidden>
+                <!-- Τι βγήκε τελευταία, χωρίς να ψάχνεις στις ενότητες. Γεμίζει μέσω JS. -->
+                <section class="sd-latest" id="sdLatestGrades" aria-labelledby="sdLatestTitle" hidden>
+                    <h2 class="sd-latest-title" id="sdLatestTitle">Τελευταίοι βαθμοί</h2>
+                    <div class="sd-latest-cols">
+                        <div class="sd-latest-col">
+                            <h3 class="sd-latest-col-title">Επίσημοι</h3>
+                            <ol class="sd-latest-list" id="sdLatestOfficial"></ol>
+                        </div>
+                        <div class="sd-latest-col">
+                            <h3 class="sd-latest-col-title">Moodle</h3>
+                            <ol class="sd-latest-list" id="sdLatestMoodle"></ol>
+                        </div>
+                    </div>
+                </section>
                 <p class="sd-section-note">
                     Ο βαθμός που μετράει είναι ο <strong>επίσημος</strong>, από το eduportal. Όπου υπάρχει και
                     βαθμός από το <strong>elearn (Moodle)</strong> φαίνεται δίπλα του — τον συντηρεί ο διδάσκων
@@ -1200,6 +1214,7 @@
 
         const card = document.createElement("div");
         card.className = "sd-course-card";
+        card.dataset.key = entry.key;
 
         const meta = official
             ? [
@@ -1233,6 +1248,7 @@
                     ${moodle ? gradeRow("Moodle:", moodle.overallGrade, true) : ""}
                 </div>
                 ${meta.length ? `<div class="sd-course-meta">${meta.map((m) => `<span>${escapeHtml(m)}</span>`).join("")}</div>` : ""}
+                ${official ? attemptsLine(official.courseCode) : ""}
                 <div class="sd-course-status ${status.cls}">${status.label}</div>`;
 
         if (moodleGrades.length > 0) {
@@ -1296,6 +1312,232 @@
 
         return card;
     }
+
+    // ------------------------------------------------------- Βαθμοί: προσπάθειες
+    // Από το ιστορικό, όχι από την τρέχουσα βαθμολογία: το /grades/diploma
+    // κρατάει μία γραμμή ανά μάθημα, οπότε μια κόπια που ξαναδόθηκε χάνεται
+    // από εκεί. Μία προσπάθεια ανά εξεταστική — μια διόρθωση μέσα στην ίδια
+    // εξεταστική αντικαθιστά τον βαθμό της, δεν είναι νέα προσπάθεια.
+    function courseAttempts(courseCode) {
+        if (!historyEnabled || !courseCode) return [];
+        const byPeriod = new Map();
+        for (const entry of historyEntries) {
+            if (entry.courseCode !== courseCode || typeof entry.grade !== "number") continue;
+            const key = entry.examPeriod ?? "";
+            const seen = byPeriod.get(key);
+            if (!seen || String(entry.at).localeCompare(String(seen.at)) > 0) byPeriod.set(key, entry);
+        }
+        return [...byPeriod.values()].sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    }
+
+    function shortMonth(iso) {
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return "";
+        return new Intl.DateTimeFormat("el-GR", { month: "short", year: "2-digit" }).format(date);
+    }
+
+    // Μόνο όταν υπάρχουν τουλάχιστον δύο· μία προσπάθεια είναι ήδη ο βαθμός
+    // της κάρτας.
+    function attemptsLine(courseCode) {
+        const attempts = courseAttempts(courseCode);
+        if (attempts.length < 2) return "";
+        const parts = attempts.map((a) => {
+            const when = shortMonth(a.at);
+            return `<span class="sd-attempt ${a.isPassed ? "is-passed" : "is-failed"}"${
+                a.examPeriod ? ` title="${escapeHtml(a.examPeriod)}"` : ""
+            }>${escapeHtml(a.grade)}${when ? ` <small>(${escapeHtml(when)})</small>` : ""}</span>`;
+        });
+        return `<div class="sd-attempts"><span class="sd-attempts-label">Προσπάθειες:</span> ${parts.join(
+            `<span class="sd-attempts-arrow" aria-hidden="true">→</span>`,
+        )}</div>`;
+    }
+
+    // ------------------------------------------------ Βαθμοί: τελευταίοι βαθμοί
+    // Δύο στήλες, οι 5 πιο πρόσφατοι από κάθε πηγή. Ημερομηνία επίσημου:
+    // το addedAt του eduportal αν ήρθε, αλλιώς η εγγραφή του ιστορικού για την
+    // ίδια εξεταστική. Ό,τι μένει χωρίς ημερομηνία πάει στο τέλος.
+    const LATEST_LIMIT = 5;
+    const SEEN_GRADES_KEY = "halalas_seen_grades";
+    // Το «Νέο» μετριέται απέναντι σε ό,τι είχε δει αυτή η συσκευή ΠΡΙΝ ανοίξει
+    // η σελίδα — αλλιώς ένα re-render (φίλτρο, ιστορικό που φόρτωσε μετά) θα
+    // έσβηνε τις σημάνσεις πριν προλάβεις να τις δεις.
+    const seenAtLoad = new Map();
+
+    function seenStorageKey(userId) {
+        return `${SEEN_GRADES_KEY}:${userId ?? ""}`;
+    }
+
+    function seenBefore(userId) {
+        if (!seenAtLoad.has(userId)) {
+            let stored = null;
+            try {
+                const parsed = JSON.parse(localStorage.getItem(seenStorageKey(userId)) || "null");
+                if (Array.isArray(parsed)) stored = new Set(parsed);
+            } catch {
+                // χωρίς αποθήκευση: πρώτη επίσκεψη, τίποτα «Νέο»
+            }
+            seenAtLoad.set(userId, stored);
+        }
+        return seenAtLoad.get(userId);
+    }
+
+    function rememberSeen(userId, keys) {
+        try {
+            const previous = JSON.parse(localStorage.getItem(seenStorageKey(userId)) || "[]");
+            const union = new Set([...(Array.isArray(previous) ? previous : []), ...keys]);
+            localStorage.setItem(seenStorageKey(userId), JSON.stringify([...union]));
+        } catch {
+            // ιδιωτική περιήγηση κ.λπ. — απλώς δεν θα υπάρχει «Νέο»
+        }
+    }
+
+    function officialDate(grade) {
+        if (grade.addedAt) return grade.addedAt;
+        const attempt = courseAttempts(grade.courseCode).find(
+            (a) => (a.examPeriod ?? "") === (grade.examPeriod ?? "") && a.grade === grade.grade,
+        );
+        return attempt ? attempt.at : null;
+    }
+
+    function byDateDesc(a, b) {
+        if (a.at && b.at) return b.at.localeCompare(a.at);
+        return a.at ? -1 : b.at ? 1 : 0;
+    }
+
+    function latestOfficial(data) {
+        const official = Array.isArray(data.eduportalGrades) ? data.eduportalGrades : [];
+        return official
+            .filter((g) => typeof g.grade === "number")
+            .map((g) => {
+                const attempts = courseAttempts(g.courseCode);
+                const index = attempts.findIndex((a) => (a.examPeriod ?? "") === (g.examPeriod ?? ""));
+                const previous = index > 0 ? attempts[index - 1] : null;
+                return {
+                    seenKey: `o|${g.courseCode}|${g.examPeriod ?? ""}|${g.grade}`,
+                    cardKey: courseKey(g.courseCode),
+                    title: g.title || g.courseCode,
+                    detail: g.examPeriod || "",
+                    grade: g.grade,
+                    failed: !g.isPassed,
+                    previous: previous ? previous.grade : null,
+                    at: officialDate(g),
+                };
+            })
+            .sort(byDateDesc)
+            .slice(0, LATEST_LIMIT);
+    }
+
+    function latestMoodle(data) {
+        const courses = Array.isArray(data.courses) ? data.courses : [];
+        const items = [];
+        for (const course of courses) {
+            const title = moodleTitleWithoutCode(course.name) || course.name;
+            for (const item of Array.isArray(course.grades) ? course.grades : []) {
+                // Χωρίς όνομα είναι σύνολο μαθήματος/κατηγορίας, όχι ξεχωριστός βαθμός.
+                if (!item || !item.name || item.grade === null || item.grade === undefined) continue;
+                items.push({
+                    seenKey: `m|${course.name}|${item.name}|${item.grade}`,
+                    cardKey: courseKey(course.name),
+                    title,
+                    detail: item.name,
+                    grade: item.grade,
+                    failed: false,
+                    previous: null,
+                    at: item.gradedAt || null,
+                    moodle: true,
+                });
+            }
+        }
+        return items.sort(byDateDesc).slice(0, LATEST_LIMIT);
+    }
+
+    function formatGrade(value) {
+        const number = Number(value);
+        return Number.isFinite(number) ? String(Math.round(number * 100) / 100) : String(value);
+    }
+
+    function latestItemHtml(item, isNew) {
+        const date = item.at
+            ? new Intl.DateTimeFormat("el-GR", { day: "numeric", month: "short", year: "numeric" }).format(new Date(item.at))
+            : "";
+        return `
+            <li>
+                <button type="button" class="sd-latest-item" data-card="${escapeHtml(item.cardKey)}"${item.moodle ? ` data-moodle="1"` : ""}>
+                    <span class="sd-latest-main">
+                        <span class="sd-latest-course">${escapeHtml(item.title)}${isNew ? ` <span class="sd-latest-new">Νέο</span>` : ""}</span>
+                        ${item.detail ? `<span class="sd-latest-detail">${escapeHtml(item.detail)}</span>` : ""}
+                        ${date ? `<span class="sd-latest-date">${escapeHtml(date)}</span>` : ""}
+                    </span>
+                    <span class="sd-latest-grade-wrap">
+                        <span class="sd-latest-grade${item.failed ? " is-failed" : ""}">${escapeHtml(formatGrade(item.grade))}</span>
+                        ${item.previous !== null ? `<span class="sd-latest-previous">προηγούμενη: ${escapeHtml(formatGrade(item.previous))}</span>` : ""}
+                    </span>
+                </button>
+            </li>`;
+    }
+
+    function renderLatestGrades(data) {
+        const frame = document.getElementById("sdLatestGrades");
+        const official = latestOfficial(data);
+        const moodle = latestMoodle(data);
+        frame.hidden = official.length === 0 && moodle.length === 0;
+        if (frame.hidden) return;
+
+        const userId = data.user ? data.user.ID : null;
+        const seen = seenBefore(userId);
+        const fill = (id, items) => {
+            document.getElementById(id).innerHTML = items.length
+                ? items.map((item) => latestItemHtml(item, Boolean(seen) && !seen.has(item.seenKey))).join("")
+                : `<li class="sd-latest-empty">Κανένας βαθμός ακόμα</li>`;
+        };
+        fill("sdLatestOfficial", official);
+        fill("sdLatestMoodle", moodle);
+
+        // Όλοι οι βαθμοί, όχι μόνο οι πέντε: ένας παλιός που δεν φάνηκε ποτέ
+        // εδώ δεν πρέπει να εμφανιστεί αργότερα ως «Νέο».
+        const allKeys = [
+            ...(Array.isArray(data.eduportalGrades) ? data.eduportalGrades : [])
+                .filter((g) => typeof g.grade === "number")
+                .map((g) => `o|${g.courseCode}|${g.examPeriod ?? ""}|${g.grade}`),
+            ...(Array.isArray(data.courses) ? data.courses : []).flatMap((course) =>
+                (Array.isArray(course.grades) ? course.grades : [])
+                    .filter((item) => item && item.name && item.grade !== null && item.grade !== undefined)
+                    .map((item) => `m|${course.name}|${item.name}|${item.grade}`),
+            ),
+        ];
+        rememberSeen(userId, allKeys);
+    }
+
+    // Από το frame στην κάρτα: αν τα φίλτρα την κρύβουν, καθαρίζονται· αν η
+    // ενότητά της είναι κλειστή, ανοίγει.
+    function revealGradeCard(cardKey, expand) {
+        const find = () =>
+            [...document.querySelectorAll("#sdGradesGrid .sd-course-card")].find((c) => c.dataset.key === cardKey);
+        let card = find();
+        if (!card && currentData) {
+            gradesFilter.status = "all";
+            gradesFilter.category = "";
+            gradesFilter.query = "";
+            gradesSearch.value = "";
+            saveGradesFilter();
+            renderGrades(currentData);
+            card = find();
+        }
+        if (!card) return;
+        const section = card.closest("details");
+        if (section) section.open = true;
+        if (expand && card.querySelector(".sd-grades-list")) card.classList.add("expanded");
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        card.classList.remove("is-flash");
+        void card.offsetWidth;
+        card.classList.add("is-flash");
+        setTimeout(() => card.classList.remove("is-flash"), 1800);
+    }
+
+    document.getElementById("sdLatestGrades").addEventListener("click", (event) => {
+        const item = event.target.closest(".sd-latest-item");
+        if (item) revealGradeCard(item.dataset.card, item.dataset.moodle === "1");
+    });
 
     // ------------------------------------------------- Βαθμοί: φίλτρα, εξάμηνα
     // Ομαδοποίηση ανά εξάμηνο του έτους (Χειμερινό / Εαρινό), όπως το γράφει το
@@ -1404,6 +1646,7 @@
     }
 
     function renderGrades(data) {
+        renderLatestGrades(data);
         const grid = document.getElementById("sdGradesGrid");
         grid.innerHTML = "";
 
@@ -2111,6 +2354,7 @@
             historyToggleInput.checked = historyEnabled;
             renderHistoryFilterOptions();
             renderHistory();
+            if (currentData) renderGrades(currentData);
             setHistoryNote("");
         } catch {
             setHistoryNote("Δεν ήταν δυνατή η φόρτωση του ιστορικού.", true);

@@ -2038,3 +2038,205 @@
             font-size: 10px;
         }
     }
+
+    /* ------------------------------------------------ Τελευταίοι βαθμοί */
+    .sd-wrapper .sd-latest {
+        margin: 0 0 18px;
+        padding: 16px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--panel-dark);
+    }
+
+    .sd-wrapper .sd-latest-title {
+        margin: 0 0 12px;
+        color: var(--off-white);
+        font: 600 16px var(--font-heading);
+    }
+
+    .sd-wrapper .sd-latest-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .sd-wrapper .sd-latest-col {
+        min-width: 0;
+    }
+
+    .sd-wrapper .sd-latest-col-title {
+        margin: 0 0 6px;
+        color: var(--cool-gray);
+        font: 600 11px var(--font-data);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .sd-wrapper .sd-latest-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .sd-wrapper .sd-latest-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        padding: 9px 8px;
+        border: 0;
+        border-top: 1px solid var(--border-subtle);
+        border-radius: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .sd-wrapper .sd-latest-list li:first-child .sd-latest-item {
+        border-top: 0;
+    }
+
+    .sd-wrapper .sd-latest-item:hover {
+        background: var(--near-black-teal);
+    }
+
+    .sd-wrapper .sd-latest-item:focus-visible {
+        outline: 2px solid var(--mint-teal);
+        outline-offset: -2px;
+    }
+
+    .sd-wrapper .sd-latest-main {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .sd-wrapper .sd-latest-course {
+        color: var(--off-white);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    .sd-wrapper .sd-latest-detail,
+    .sd-wrapper .sd-latest-date {
+        overflow: hidden;
+        color: var(--cool-gray);
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sd-wrapper .sd-latest-date {
+        font-family: var(--font-data);
+    }
+
+    .sd-wrapper .sd-latest-new {
+        display: inline-block;
+        margin-left: 4px;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: var(--mint-teal);
+        color: var(--near-black-teal);
+        font: 700 10px var(--font-data);
+        vertical-align: 1px;
+    }
+
+    .sd-wrapper .sd-latest-grade-wrap {
+        display: flex;
+        flex: none;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+    }
+
+    .sd-wrapper .sd-latest-grade {
+        padding: 3px 9px;
+        border-radius: 6px;
+        background: var(--near-black-teal);
+        color: var(--mint-teal);
+        font: 700 14px var(--font-data);
+    }
+
+    .sd-wrapper .sd-latest-grade.is-failed {
+        color: #ffb7b7;
+    }
+
+    .sd-wrapper .sd-latest-previous {
+        color: var(--cool-gray);
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    .sd-wrapper .sd-latest-empty {
+        padding: 9px 8px;
+        color: var(--cool-gray);
+        font-size: 12px;
+    }
+
+    @media (max-width: 600px) {
+        .sd-wrapper .sd-latest-cols {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Προσπάθειες ανά μάθημα, μέσα στην κάρτα */
+    .sd-wrapper .sd-attempts {
+        margin-top: 10px;
+        color: var(--cool-gray);
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    .sd-wrapper .sd-attempts-label {
+        margin-right: 2px;
+    }
+
+    .sd-wrapper .sd-attempt {
+        font: 700 12px var(--font-data);
+        white-space: nowrap;
+    }
+
+    .sd-wrapper .sd-attempt small {
+        color: var(--cool-gray);
+        font-weight: 400;
+    }
+
+    .sd-wrapper .sd-attempt.is-passed {
+        color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-attempt.is-failed {
+        color: #ffb7b7;
+    }
+
+    .sd-wrapper .sd-attempts-arrow {
+        margin: 0 5px;
+    }
+
+    /* Η κάρτα που άνοιξε από τους τελευταίους βαθμούς */
+    .sd-wrapper .sd-course-card.is-flash {
+        animation: sd-card-flash 1.8s ease-out;
+    }
+
+    @keyframes sd-card-flash {
+        0%, 35% {
+            border-color: var(--mint-teal);
+            box-shadow: 0 0 0 2px var(--mint-teal);
+        }
+        100% {
+            border-color: var(--border-subtle);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .sd-wrapper .sd-course-card.is-flash {
+            animation: none;
+            outline: 2px solid var(--mint-teal);
+        }
+    }

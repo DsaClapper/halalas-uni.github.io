@@ -2135,7 +2135,8 @@
         font-family: var(--font-data);
     }
 
-    .sd-wrapper .sd-latest-new {
+    .sd-wrapper .sd-latest-new,
+    .sd-wrapper .sd-file-new {
         display: inline-block;
         margin-left: 4px;
         padding: 1px 6px;
@@ -2238,5 +2239,167 @@
         .sd-wrapper .sd-course-card.is-flash {
             animation: none;
             outline: 2px solid var(--mint-teal);
+        }
+    }
+
+    /* ---------------------------------------------------------------- Αρχεία
+       Τα πλαίσια (μάθημα που ανοιγοκλείνει, μπάρα φίλτρων, chips, διακόπτης
+       προβολής) είναι τα ίδια .sd-* των Βαθμών και των Εκκρεμοτήτων. Εδώ μόνο
+       ό,τι δεν υπάρχει αλλού: η γραμμή αρχείου με το κουμπί λήψης δίπλα της. */
+    .sd-wrapper .sd-files-group-title {
+        margin: 22px 0 10px;
+        color: var(--cool-gray);
+        font: 600 12px var(--font-heading);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .sd-wrapper .sd-files-course-body {
+        padding: 4px 16px 12px;
+    }
+
+    .sd-wrapper .sd-files-section + .sd-files-section {
+        margin-top: 6px;
+    }
+
+    .sd-wrapper .sd-files-section-title {
+        margin: 12px 0 2px;
+        color: var(--pale-mint);
+        font: 600 13px var(--font-heading);
+    }
+
+    .sd-wrapper .sd-files-assignment-name {
+        margin: 8px 0 0;
+        color: var(--cool-gray);
+        font-size: 12px;
+    }
+
+    .sd-wrapper .sd-files-rows {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    /* Η «Νεότερα» δεν έχει μάθημα να την πλαισιώσει· παίρνει το ίδιο πλαίσιο. */
+    .sd-wrapper .sd-files-recent {
+        padding: 0 16px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: var(--near-black-teal);
+    }
+
+    .sd-wrapper .sd-file-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .sd-wrapper .sd-file-row + .sd-file-row {
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Όλη η γραμμή πατιέται (προβολή)· στο κινητό ένα όνομα αρχείου είναι
+       πολύ μικρότερος στόχος απ' όσο χρειάζεται ο αντίχειρας. */
+    .sd-wrapper .sd-file-open {
+        display: flex;
+        flex: 1 1 auto;
+        align-items: flex-start;
+        gap: 10px;
+        min-width: 0;
+        padding: 11px 0;
+        border: 0;
+        background: transparent;
+        color: var(--off-white);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .sd-wrapper .sd-file-open:hover .sd-file-name {
+        color: var(--mint-teal);
+    }
+
+    .sd-wrapper .sd-file-icon {
+        flex: none;
+        width: 20px;
+        height: 20px;
+        margin-top: 1px;
+        color: var(--cool-gray);
+    }
+
+    /* Ο τύπος με μια ματιά, χωρίς να διαβάσεις την κατάληξη. */
+    .sd-wrapper .sd-file-icon.is-pdf { color: #ff9a9a; }
+    .sd-wrapper .sd-file-icon.is-word { color: #8fb8ff; }
+    .sd-wrapper .sd-file-icon.is-powerpoint { color: #ffbf7a; }
+
+    .sd-wrapper .sd-file-main {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .sd-wrapper .sd-file-name {
+        font-size: 14px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
+    .sd-wrapper .sd-file-meta {
+        color: var(--cool-gray);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+    }
+
+    .sd-wrapper .sd-file-mine {
+        display: inline-block;
+        margin-left: 4px;
+        padding: 0 6px;
+        border: 1px solid var(--mint-teal);
+        border-radius: 999px;
+        color: var(--mint-teal);
+        font: 600 10px var(--font-data);
+        vertical-align: 1px;
+    }
+
+    .sd-wrapper .sd-file-download {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--mint-teal);
+        cursor: pointer;
+    }
+
+    .sd-wrapper .sd-file-download svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .sd-wrapper .sd-file-download:hover {
+        background: rgba(94, 234, 212, 0.12);
+    }
+
+    .sd-wrapper .sd-file-open:focus-visible,
+    .sd-wrapper .sd-file-download:focus-visible {
+        outline: 2px solid var(--mint-teal);
+        outline-offset: 2px;
+    }
+
+    .sd-wrapper .sd-files-partial {
+        margin-bottom: 14px;
+    }
+
+    @media (max-width: 600px) {
+        .sd-wrapper .sd-files-course-body {
+            padding: 2px 12px 10px;
+        }
+
+        .sd-wrapper .sd-files-recent {
+            padding: 0 12px;
         }
     }

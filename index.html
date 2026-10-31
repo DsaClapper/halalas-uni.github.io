@@ -711,6 +711,11 @@
 
             if (response.ok && data.ok) {
                 renderDashboardData(data);
+                // Το /auth/session είναι το στιγμιότυπο που κράτησε ο server —
+                // με «Remember me» μπορεί να είναι εβδομάδων. Το δείχνουμε
+                // αμέσως για να μην περιμένεις, και φέρνουμε τα φρέσκα από πίσω.
+                // Χωρίς αυτό, νέα δεδομένα έβλεπες μόνο με sign out και login.
+                refreshDashboardData({ silent: true });
             } else if (response.status === 401) {
                 returnToLogin();
             } else {
@@ -970,8 +975,15 @@
     // επιστρέφεις στην εφαρμογή, που είναι η στιγμή που ένα deploy μπορεί να
     // έχει μεσολαβήσει χωρίς να το ξέρεις.
     checkForUpdate();
+    // Μια εφαρμογή στην αρχική οθόνη του κινητού δεν ξαναφορτώνει όταν την
+    // ανοίγεις — απλώς ξυπνάει. Αν έχει περάσει ώρα, φέρνουμε φρέσκα δεδομένα.
+    const REFRESH_ON_RETURN_AFTER_MS = 15 * 60 * 1000;
     document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") checkForUpdate();
+        if (document.visibilityState !== "visible") return;
+        checkForUpdate();
+        if (dashboardReady && currentData && (!lastUpdatedAt || Date.now() - lastUpdatedAt > REFRESH_ON_RETURN_AFTER_MS)) {
+            refreshDashboardData({ silent: true });
+        }
     });
     updateHeaderShrink();
 
@@ -1042,12 +1054,36 @@
         });
     }
 
-    async function refreshDashboardData() {
-        if (!currentData) return;
+    // Μία ανανέωση τη φορά: η αθόρυβη του ανοίγματος και ένα τράβηγμα αμέσως
+    // μετά θα έκαναν δύο login στο eduportal για το ίδιο πράγμα.
+    let refreshInFlight = null;
 
+    // `silent`: η αυτόματη ανανέωση (άνοιγμα, επιστροφή στην εφαρμογή). Δεν
+    // γράφει «Ανανέωση...» ούτε σφάλματα — δεν τη ζήτησες, και αν αποτύχει
+    // απλώς μένουν τα δεδομένα που ήδη βλέπεις.
+    function refreshDashboardData(options = {}) {
+        if (!currentData) return Promise.resolve();
+        if (refreshInFlight) {
+            // Αν περιμένει ήδη μια αθόρυβη και πατήσεις το κουμπί, να φαίνεται.
+            if (!options.silent) setDashboardStatus("Ανανέωση δεδομένων...");
+            return refreshInFlight;
+        }
+        refreshInFlight = runRefresh(options).finally(() => {
+            refreshInFlight = null;
+        });
+        return refreshInFlight;
+    }
+
+    function sameDashboardData(a, b) {
+        const pick = (d) => JSON.stringify([d.user, d.courses, d.eduportalGrades, d.assignments ?? null]);
+        return Boolean(a && b) && pick(a) === pick(b);
+    }
+
+    async function runRefresh({ silent = false } = {}) {
         const refreshButton = document.getElementById("refreshBtn");
         refreshButton.disabled = true;
-        setDashboardStatus("Ανανέωση δεδομένων...");
+        if (!silent) setDashboardStatus("Ανανέωση δεδομένων...");
+        const attemptAtStart = loginAttempt;
 
         try {
             // /auth/session επιστρέφει το στιγμιότυπο του login και δεν
@@ -1060,6 +1096,8 @@
             });
             const data = await response.json();
 
+            // Έκανες sign out όσο έτρεχε: η απάντηση είναι του προηγούμενου.
+            if (attemptAtStart !== loginAttempt || !currentData) return;
             if (response.status === 429) throw new Error("RATE_LIMITED");
             if (response.status === 401) {
                 returnToLogin("Η σύνδεση έληξε. Συνδέσου ξανά.");
@@ -1067,7 +1105,14 @@
             }
             if (!response.ok || !data.ok) throw new Error("REFRESH_FAILED");
 
-            renderDashboardData(data, true);
+            // Τις περισσότερες φορές δεν έχει αλλάξει τίποτα. Τότε δεν ξαναζωγραφίζουμε:
+            // μια αθόρυβη ανανέωση που φτάνει ενώ κυλάς ή έχεις πατήσει μια
+            // κάρτα θα σου πετούσε το scroll για να δείξει τα ίδια πράγματα.
+            if (sameDashboardData(currentData, data)) {
+                currentData = data;
+            } else {
+                renderDashboardData(data, true);
+            }
             setLastUpdated();
             // Το /auth/refresh πέταξε και τη λίστα αρχείων του server· αν την
             // είχες ανοίξει, την ξαναφέρνουμε για να μη δείχνει την παλιά.
@@ -1076,7 +1121,11 @@
             // Μια ανανέωση που δεν μπόρεσε να διαβάσει τους επίσημους βαθμούς
             // πρέπει να το πει. Αλλιώς κοιτάς μια οθόνη που μόλις «ανανεώθηκε»
             // και συμπεραίνεις ότι δεν βγήκε τίποτα — που μπορεί να μην ισχύει.
-            const official = data.refreshed && data.refreshed.official;
+            // `officialRecent`: διαβάστηκαν πριν λίγα λεπτά (ο server δεν κάνει
+            // νέο login στο eduportal πιο συχνά από κάθε 10'), άρα είναι φρέσκοι.
+            const official = (data.refreshed && data.refreshed.official) || data.officialRecent === true;
+            if (silent && official) setDashboardStatus("");
+            if (silent) return;
             setDashboardStatus(
                 official
                     ? ""
@@ -1086,6 +1135,7 @@
                 !official
             );
         } catch (error) {
+            if (silent) return;
             setDashboardStatus(
                 error.message === "RATE_LIMITED"
                     ? "Πολλές προσπάθειες. Δοκιμάστε ξανά αργότερα."

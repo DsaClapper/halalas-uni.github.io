@@ -700,6 +700,9 @@
         }
     }
 
+    const RELOGIN_MESSAGE =
+        "Η εφαρμογή ενημερώθηκε: πλέον οι βαθμοί ανανεώνονται μόνοι τους. Συνδέσου ξανά μία φορά (με «Remember me») για να ενεργοποιηθεί.";
+
     async function restoreSession() {
         RenderloadingScreen("login");
 
@@ -716,6 +719,11 @@
                 // αμέσως για να μην περιμένεις, και φέρνουμε τα φρέσκα από πίσω.
                 // Χωρίς αυτό, νέα δεδομένα έβλεπες μόνο με sign out και login.
                 refreshDashboardData({ silent: true });
+            } else if (response.status === 401 && data.code === "RELOGIN_REQUIRED") {
+                // Συνδέσεις από πριν την αυτόματη ανανέωση: ο server δεν έχει
+                // τρόπο να ξαναδιαβάσει τους επίσημους βαθμούς τους, οπότε
+                // ζητάει ένα login ακόμα. Λέμε το γιατί, να μη μοιάζει με βλάβη.
+                returnToLogin(RELOGIN_MESSAGE);
             } else if (response.status === 401) {
                 returnToLogin();
             } else {
@@ -1100,7 +1108,7 @@
             if (attemptAtStart !== loginAttempt || !currentData) return;
             if (response.status === 429) throw new Error("RATE_LIMITED");
             if (response.status === 401) {
-                returnToLogin("Η σύνδεση έληξε. Συνδέσου ξανά.");
+                returnToLogin(data.code === "RELOGIN_REQUIRED" ? RELOGIN_MESSAGE : "Η σύνδεση έληξε. Συνδέσου ξανά.");
                 return;
             }
             if (!response.ok || !data.ok) throw new Error("REFRESH_FAILED");

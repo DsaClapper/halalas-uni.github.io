@@ -126,7 +126,8 @@
         border-radius: 10px;
         background: var(--panel-dark);
         color: var(--off-white);
-        font: 15px var(--font-body);
+        /* 16px και όχι λιγότερο: κάτω από αυτό το iOS κάνει zoom στο focus. */
+        font: 16px var(--font-body);
     }
 
     .app-modal-input-group input:focus {
@@ -1405,6 +1406,13 @@
         cursor: pointer;
     }
 
+    /* Σε οθόνη αφής το iOS κάνει zoom σε select κάτω από 16px. */
+    @media (hover: none) and (pointer: coarse) {
+        .sd-wrapper .sd-history-filter {
+            font-size: 16px;
+        }
+    }
+
     .sd-wrapper .sd-history-filter:focus-visible {
         border-color: var(--mint-teal);
         outline: 2px solid var(--mint-teal);
@@ -1987,9 +1995,11 @@
         }
 
         .sd-wrapper .sd-filter-bar .sd-history-filter {
-            flex: 0 1 40%;
-            max-width: 40%;
-            padding: 9px 10px;
+            /* Μισή γραμμή: στα 16px το «Κατηγορία: όλες» δεν χωράει σε λιγότερο. */
+            flex: 0 1 50%;
+            max-width: 50%;
+            /* Ίδιο ύψος με την αναζήτηση δίπλα του τώρα που έχουν και τα δύο 16px. */
+            padding: 8px 10px;
         }
 
         /* Και τα τέσσερα πρέπει να φαίνονται χωρίς οριζόντιο scroll: ένα

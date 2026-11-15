@@ -5,7 +5,7 @@ window.APP_CONFIG = {
     description: "Halalas University student portal",
     logo: "imgs/halalas-university-logo.png",
     favicon: "imgs/halalas-university-logo.png",
-    themeColor: "#0f5c5c",
+    themeColor: "#000000",
 };
 
 (function applyAppConfig(config) {

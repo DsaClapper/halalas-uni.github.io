@@ -12,7 +12,7 @@
          εφαρμογή εγκατεστημένη στην αρχική οθόνη, η κάτω μπάρα κάθεται πάνω
          στη γραμμή του home indicator. -->
     <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover" />
+          content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Halalas University Portal</title>
     <link rel="icon" href="imgs/halalas-university-logo.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -38,7 +38,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Halalas University" />
     <meta name="apple-mobile-web-app-title" content="Halalas University" />
-    <meta name="theme-color" content="currentColor" />
+    <meta name="theme-color" content="#000000" />
     <script src="https://code.jquery.com/jquery-4.0.0.min.js"
         integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
 </head>
@@ -112,14 +112,17 @@
         <div class="login-container">
         <h2>WELCOME TO <span data-app-name>HALALAS UNIVERSITY</span></h2>
         <p class="login-status" id="loginStatus" role="alert" hidden></p>
+        <form id="loginForm" novalidate>
         <div class="input-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" placeholder="Εισάγετε το email σας" required />
+            <label for="username">Όνομα χρήστη UOC</label>
+            <input type="text" id="username" name="username" placeholder="π.χ. csd1234" autocomplete="username"
+                   autocapitalize="none" autocorrect="off" spellcheck="false" required />
         </div>
 
         <div class="input-group">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="Εισάγετε τον κωδικό σας" required />
+            <input type="password" id="password" name="password" placeholder="Εισάγετε τον κωδικό σας"
+                   autocomplete="current-password" required />
         </div>
 
         <div class="remember-group">
@@ -131,6 +134,7 @@
         <div class="loginbtn-group">
             <button type="submit" class="login-btn">Login</button>
         </div>
+        </form>
         </div>
     </div>
 
@@ -425,7 +429,7 @@
 <script>
     const authBaseUrl = "https://uni-api.halalas-services.xyz/auth";
     const rememberSessionKey = "halalasRememberSession";
-    const emailInput = document.getElementById("email");
+    const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
     const rememberInput = document.getElementById("remember");
     const loginStatus = document.getElementById("loginStatus");
@@ -661,7 +665,7 @@
     // Χωρίς αυτό το "πριν 2 λεπτά" θα έμενε για πάντα "πριν 2 λεπτά".
     setInterval(paintLastUpdated, 60 * 1000);
 
-    async function startLogin(email, password) {
+    async function startLogin(username, password) {
         const attemptId = ++loginAttempt;
         dashboardReady = false;
         setLoginStatus("");
@@ -684,7 +688,7 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    username: email,
+                    username,
                     password,
                     remember: rememberInput.checked,
                 }),
@@ -837,8 +841,9 @@
         restoreTab();
     }
 
-    document.querySelector(".login-btn").addEventListener("click", () => {
-        startLogin(emailInput.value.trim(), passwordInput.value);
+    document.getElementById("loginForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        startLogin(usernameInput.value.trim(), passwordInput.value);
     });
     notificationToggleInput.addEventListener("change", () => {
         setNotificationsEnabled(notificationToggleInput.checked);
@@ -1060,7 +1065,7 @@
                 $(".dashboard-loader-wrapper").stop(true, true).hide();
                 selectTab(DEFAULT_TAB, { remember: false });
                 passwordInput.value = "";
-                emailInput.value = "";
+                usernameInput.value = "";
                 rememberInput.checked = false;
                 localStorage.removeItem(rememberSessionKey);
                 currentData = null;

@@ -742,19 +742,28 @@
     // Σταθμισμένος με ECTS, γιατί αυτό μετράει για το πτυχίο. Αν λείπουν ECTS
     // από κάποιο μάθημα πέφτει σε απλό μέσο όρο και το λέει, αντί να βγάλει
     // σιωπηλά νούμερο που δεν σημαίνει αυτό που νομίζεις.
+    //
+    // Το eduportal λέει το ίδιο ποια μαθήματα μετράνε: ένα περασμένο μάθημα
+    // μπορεί να μην μπαίνει στον βαθμό πτυχίου ή να μην δίνει ECTS για το
+    // πτυχίο. Όταν η σημαία λείπει (παλιά δεδομένα) το μάθημα μετράει, όπως
+    // πριν.
+    const countsInAverage = (c) => c.countsTowardDegreeGrade !== false;
+    const countsInDiploma = (c) => c.countsTowardDiploma !== false;
+
     function computeSummary(data) {
         const official = Array.isArray(data.eduportalGrades) ? data.eduportalGrades : [];
         const graded = official.filter((c) => c.grade !== null && c.grade !== undefined && c.isPassed);
+        const averaged = graded.filter(countsInAverage);
 
-        const weights = graded.map((c) => Number(c.ects) || 0);
+        const weights = averaged.map((c) => Number(c.ects) || 0);
         const weighted = weights.every((w) => w > 0);
 
         let average = null;
-        if (graded.length > 0) {
+        if (averaged.length > 0) {
             average = weighted
-                ? graded.reduce((sum, c, i) => sum + Number(c.grade) * weights[i], 0) /
+                ? averaged.reduce((sum, c, i) => sum + Number(c.grade) * weights[i], 0) /
                   weights.reduce((sum, w) => sum + w, 0)
-                : graded.reduce((sum, c) => sum + Number(c.grade), 0) / graded.length;
+                : averaged.reduce((sum, c) => sum + Number(c.grade), 0) / averaged.length;
         }
 
         // Ίδιος ορισμός με τον μετρητή δίπλα στις «Εκκρεμότητες» — δύο νούμερα
@@ -770,7 +779,7 @@
             weighted,
             passed: graded.length,
             total: official.length,
-            ects: graded.reduce((sum, c) => sum + (Number(c.ects) || 0), 0),
+            ects: graded.filter(countsInDiploma).reduce((sum, c) => sum + (Number(c.ects) || 0), 0),
             pending,
         };
     }
@@ -1367,7 +1376,8 @@
                 </div>
                 ${meta.length ? `<div class="sd-course-meta">${meta.map((m) => `<span>${escapeHtml(m)}</span>`).join("")}</div>` : ""}
                 ${official ? attemptsLine(official.courseCode) : ""}
-                <div class="sd-course-status ${status.cls}">${status.label}</div>`;
+                <div class="sd-course-status ${status.cls}">${status.label}</div>
+                ${official && official.isPassed && official.countsTowardDegreeGrade === false ? `<div class="sd-course-note" title="Δεν μετράει στον μέσο όρο πτυχίου">εκτός Μ.Ο.</div>` : ""}`;
 
         if (moodleGrades.length > 0) {
             html += `
@@ -1733,7 +1743,7 @@
     function sectionAverage(entries) {
         const graded = entries
             .map((entry) => entry.official)
-            .filter((c) => c && c.isPassed && c.grade !== null && c.grade !== undefined);
+            .filter((c) => c && c.isPassed && c.grade !== null && c.grade !== undefined && countsInAverage(c));
         if (graded.length === 0) return null;
         const weights = graded.map((c) => Number(c.ects) || 0);
         const weighted = weights.every((w) => w > 0);
@@ -1834,7 +1844,7 @@
 
             const average = sectionAverage(section.entries);
             const ects = section.entries
-                .filter((e) => e.official && e.official.isPassed)
+                .filter((e) => e.official && e.official.isPassed && countsInDiploma(e.official))
                 .reduce((sum, e) => sum + (Number(e.official.ects) || 0), 0);
             const hasCurrent = section.entries.some((e) => e.moodle);
             const defaultOpen = !bySemester ? section.key === "current" || !current.length : hasCurrent;

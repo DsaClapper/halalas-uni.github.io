@@ -1001,6 +1001,12 @@
         font: 11px var(--font-data);
     }
 
+    .sd-wrapper .sd-course-note {
+        margin-top: 6px;
+        color: var(--cool-gray);
+        font: 11px var(--font-data);
+    }
+
     .sd-wrapper .sd-course-status {
         width: fit-content;
         margin-top: 12px;

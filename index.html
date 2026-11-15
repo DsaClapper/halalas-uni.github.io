@@ -183,8 +183,8 @@
                     <label class="sd-notification-toggle" id="notificationToggle" hidden>
                         <span class="sd-toggle-text">
                             Ειδοποιήσεις
-                            <!-- Χωρίς αυτή τη γραμμή ο διακόπτης ζητάει τον
-                                 κωδικό σου χωρίς να έχει πει τι δίνει πίσω. -->
+                            <!-- Χωρίς αυτή τη γραμμή ο διακόπτης δεν λέει τι
+                                 δίνει πριν ζητήσει τη συναίνεσή σου. -->
                             <small>Μάθε για νέο βαθμό ή προθεσμία χωρίς να μπαίνεις</small>
                         </span>
                         <input type="checkbox" id="notificationToggleInput" />
@@ -458,6 +458,8 @@
         modalResolve = null;
         appModal.classList.remove("is-visible");
         setTimeout(() => {
+            // Αν στο μεταξύ άνοιξε επόμενο modal, το παράθυρο είναι πια δικό του.
+            if (modalResolve) return;
             appModal.hidden = true;
             appModalInput.value = "";
         }, 180);
@@ -467,6 +469,7 @@
     function openAppModal({ title, message, confirmLabel = "Συνέχεια", input = false }) {
         return new Promise((resolve) => {
             modalResolve = resolve;
+            appModalInput.value = "";
             appModalTitle.textContent = title;
             appModalMessage.textContent = message;
             appModalConfirm.textContent = confirmLabel;
@@ -547,9 +550,29 @@
         notificationToggleInput.checked = localStorage.getItem(notificationsEnabledKey) === "true";
     }
 
+    function setNotificationToggle(on) {
+        notificationToggleInput.checked = on;
+        if (on) localStorage.setItem(notificationsEnabledKey, "true");
+        else localStorage.removeItem(notificationsEnabledKey);
+    }
+
+    // Η συνδρομή αυτής της συσκευής, χωρίς να ζητηθεί άδεια και χωρίς να
+    // στηθεί service worker αν δεν υπάρχει ήδη.
+    async function currentPushEndpoint() {
+        const registration = await navigator.serviceWorker.getRegistration("/");
+        const subscription = registration ? await registration.pushManager.getSubscription() : null;
+        return subscription ? subscription.endpoint : "";
+    }
+
+    // Αλλάζει κάθε φορά που ο χρήστης πατάει τον διακόπτη: μια απάντηση του
+    // server που ξεκίνησε πριν από το πάτημα δεν πρέπει να το αναιρέσει.
+    let notificationToggleTouches = 0;
+
     async function preparePushNotifications() {
         if (!supportsPushNotifications()) return;
+        // Πρώτα ό,τι θυμάται η συσκευή, για να μην περιμένει ο διακόπτης το δίκτυο.
         updateNotificationToggle();
+        const touches = notificationToggleTouches;
 
         // Restore an existing opt-in silently, without requesting permission on page load.
         if (
@@ -559,6 +582,41 @@
             notificationSetupPromise = getPushSubscription().catch(() => null);
             await notificationSetupPromise;
         }
+
+        // Χωρίς άδεια δεν φτάνει καμία ειδοποίηση εδώ, ό,τι κι αν λέει ο server.
+        if (Notification.permission !== "granted") {
+            if (touches === notificationToggleTouches) setNotificationToggle(false);
+            return;
+        }
+
+        // Η αλήθεια είναι στον server: ο διακόπτης μπορεί να έκλεισε από άλλη
+        // συσκευή, ή η συσκευή αυτή να έχασε τη συνδρομή της. Αν ο server δεν
+        // απαντήσει, μένει ό,τι θυμόμασταν.
+        try {
+            const endpoint = await currentPushEndpoint();
+            const response = await fetch(`${notificationsBaseUrl}/status`, {
+                credentials: "include",
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(endpoint ? { endpoint } : {}),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok || touches !== notificationToggleTouches) return;
+            setNotificationToggle(data.enabled === true && data.deviceSubscribed === true);
+        } catch {
+            // Εκτός δικτύου ή παλιό backend: δεν αλλάζει τίποτα.
+        }
+    }
+
+    async function requestEnableNotifications(body) {
+        const response = await fetch(`${notificationsBaseUrl}/enable`, {
+            credentials: "include",
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+        const data = await response.json().catch(() => ({}));
+        return { ok: response.ok && data.ok === true, code: data.code };
     }
 
     async function unregisterPushWorker() {
@@ -571,14 +629,16 @@
     }
 
     async function setNotificationsEnabled(enabled) {
+        notificationToggleTouches++;
         if (enabled) {
-            const password = await openAppModal({
+            // Ο server έχει ήδη τον κωδικό της σύνδεσης (σφραγισμένο), οπότε
+            // δεν τον ξαναζητάμε· ζητάμε μόνο τη συναίνεση να τον κρατήσει.
+            const confirmed = await openAppModal({
                 title: "Ενεργοποίηση ειδοποιήσεων",
-                message: "Εισάγετε ξανά τον κωδικό σας για να αποθηκεύσουμε τη συναίνεσή σας για τις ειδοποιήσεις βαθμών.",
+                message: "Για να ελέγχουμε τους βαθμούς σας στο παρασκήνιο, ο κωδικός σας θα μείνει αποθηκευμένος κρυπτογραφημένος στον server. Μπορείτε να τις απενεργοποιήσετε όποτε θέλετε.",
                 confirmLabel: "Ενεργοποίηση",
-                input: true,
             });
-            if (!password) {
+            if (!confirmed) {
                 notificationToggleInput.checked = false;
                 return;
             }
@@ -586,18 +646,23 @@
             try {
                 const subscription = await getPushSubscription();
                 if (!subscription) throw new Error("PUSH_PERMISSION_REQUIRED");
-                const response = await fetch(`${notificationsBaseUrl}/enable`, {
-                    credentials: "include",
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ password }),
-                });
-                const data = await response.json();
-                if (!response.ok || !data.ok) throw new Error("ENABLE_FAILED");
-                localStorage.setItem(notificationsEnabledKey, "true");
+                let result = await requestEnableNotifications({});
+                // Συνδέσεις χωρίς σφραγισμένο κωδικό, ή κωδικός που άλλαξε από
+                // τότε: εκεί μόνο χρειάζεται να τον πληκτρολογήσεις.
+                if (!result.ok && (result.code === "PASSWORD_REQUIRED" || result.code === "INVALID_CREDENTIALS")) {
+                    const password = await openAppModal({
+                        title: "Ενεργοποίηση ειδοποιήσεων",
+                        message: "Εισάγετε τον κωδικό σας UOC για να ενεργοποιηθούν οι ειδοποιήσεις.",
+                        confirmLabel: "Ενεργοποίηση",
+                        input: true,
+                    });
+                    if (!password) throw new Error("PASSWORD_REQUIRED");
+                    result = await requestEnableNotifications({ password });
+                }
+                if (!result.ok) throw new Error("ENABLE_FAILED");
+                setNotificationToggle(true);
             } catch {
-                notificationToggleInput.checked = false;
-                localStorage.removeItem(notificationsEnabledKey);
+                setNotificationToggle(false);
             }
             return;
         }

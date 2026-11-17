@@ -5,7 +5,8 @@
     <meta charset="UTF-8" />
     <!-- Ένα viewport, όχι τρία. Υπήρχαν τρία meta tags με διαφορετικό
          περιεχόμενο· ποιο κερδίζει εξαρτάται από τον browser, δηλαδή ήταν
-         τύχη. Κρατήθηκε η πρόθεση του τελευταίου (χωρίς zoom).
+         τύχη. Κρατήθηκε ένα, χωρίς maximum-scale/user-scalable: το pinch
+         zoom επιτρέπεται.
 
          Το `viewport-fit=cover` προστέθηκε επειδή χωρίς αυτό τα
          `env(safe-area-inset-*)` είναι πάντα μηδέν — και σε iPhone, με την
@@ -25,7 +26,7 @@
          κανόνες, δηλαδή σπασμένη σελίδα.
          Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
     <link rel="stylesheet" type="text/css" href="css/main.css?v=20261115" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20261115" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20261117" />
     <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Χωρίς αυτό το iOS διαλέγει μόνο του πώς φέρεται η status bar στην
@@ -116,13 +117,13 @@
         <div class="input-group">
             <label for="username">Όνομα χρήστη UOC</label>
             <input type="text" id="username" name="username" placeholder="π.χ. csd1234" autocomplete="username"
-                   autocapitalize="none" autocorrect="off" spellcheck="false" required />
+                   autocapitalize="none" autocorrect="off" spellcheck="false" />
         </div>
 
         <div class="input-group">
             <label for="password">Password</label>
             <input type="password" id="password" name="password" placeholder="Εισάγετε τον κωδικό σας"
-                   autocomplete="current-password" required />
+                   autocomplete="current-password" />
         </div>
 
         <div class="remember-group">
@@ -467,6 +468,13 @@
     }
 
     function openAppModal({ title, message, confirmLabel = "Συνέχεια", input = false }) {
+        // Ένα παράθυρο που ανοίγει πάνω σε άλλο απαντά «άκυρο» στο πρώτο·
+        // αλλιώς όποιος περίμενε εκείνη την απάντηση θα περίμενε για πάντα.
+        if (modalResolve) {
+            const previous = modalResolve;
+            modalResolve = null;
+            previous(null);
+        }
         return new Promise((resolve) => {
             modalResolve = resolve;
             appModalInput.value = "";
@@ -547,6 +555,8 @@
         }
 
         notificationToggle.hidden = false;
+        // Μια αλλαγή σε εξέλιξη έχει ήδη βάλει τον διακόπτη εκεί που πάει.
+        if (notificationToggleBusy) return;
         notificationToggleInput.checked = localStorage.getItem(notificationsEnabledKey) === "true";
     }
 
@@ -567,6 +577,9 @@
     // Αλλάζει κάθε φορά που ο χρήστης πατάει τον διακόπτη: μια απάντηση του
     // server που ξεκίνησε πριν από το πάτημα δεν πρέπει να το αναιρέσει.
     let notificationToggleTouches = 0;
+    // Όσο τρέχει μια ενεργοποίηση ή απενεργοποίηση, ο διακόπτης δεν πατιέται
+    // και τίποτα άλλο δεν τον μετακινεί.
+    let notificationToggleBusy = false;
 
     async function preparePushNotifications() {
         if (!supportsPushNotifications()) return;
@@ -585,7 +598,7 @@
 
         // Χωρίς άδεια δεν φτάνει καμία ειδοποίηση εδώ, ό,τι κι αν λέει ο server.
         if (Notification.permission !== "granted") {
-            if (touches === notificationToggleTouches) setNotificationToggle(false);
+            if (touches === notificationToggleTouches && !notificationToggleBusy) setNotificationToggle(false);
             return;
         }
 
@@ -601,7 +614,7 @@
                 body: JSON.stringify(endpoint ? { endpoint } : {}),
             });
             const data = await response.json();
-            if (!response.ok || !data.ok || touches !== notificationToggleTouches) return;
+            if (!response.ok || !data.ok || touches !== notificationToggleTouches || notificationToggleBusy) return;
             setNotificationToggle(data.enabled === true && data.deviceSubscribed === true);
         } catch {
             // Εκτός δικτύου ή παλιό backend: δεν αλλάζει τίποτα.
@@ -616,8 +629,17 @@
             body: JSON.stringify(body),
         });
         const data = await response.json().catch(() => ({}));
-        return { ok: response.ok && data.ok === true, code: data.code };
+        const code = data.code || (response.status === 429 ? "RATE_LIMITED" : undefined);
+        return { ok: response.ok && data.ok === true, code };
     }
+
+    // Ένας διακόπτης που γυρίζει πίσω χωρίς λέξη μοιάζει χαλασμένος.
+    const NOTIFICATION_ERRORS = {
+        PUSH_BLOCKED: "Οι ειδοποιήσεις είναι αποκλεισμένες για αυτή τη σελίδα. Επίτρεψέ τες από τις ρυθμίσεις του browser.",
+        RATE_LIMITED: "Πολλές προσπάθειες. Δοκίμασε ξανά σε ένα λεπτό.",
+        UPSTREAM_ERROR: "Το eLearn δεν απαντά αυτή τη στιγμή. Δοκίμασε ξανά αργότερα.",
+        INVALID_CREDENTIALS: "Λάθος κωδικός. Οι ειδοποιήσεις δεν ενεργοποιήθηκαν.",
+    };
 
     async function unregisterPushWorker() {
         const registration = await navigator.serviceWorker.getRegistration("/");
@@ -629,7 +651,20 @@
     }
 
     async function setNotificationsEnabled(enabled) {
+        if (notificationToggleBusy) return;
+        notificationToggleBusy = true;
+        notificationToggleInput.disabled = true;
         notificationToggleTouches++;
+        setDashboardStatus("");
+        try {
+            await changeNotifications(enabled);
+        } finally {
+            notificationToggleBusy = false;
+            notificationToggleInput.disabled = false;
+        }
+    }
+
+    async function changeNotifications(enabled) {
         if (enabled) {
             // Ο server έχει ήδη τον κωδικό της σύνδεσης (σφραγισμένο), οπότε
             // δεν τον ξαναζητάμε· ζητάμε μόνο τη συναίνεση να τον κρατήσει.
@@ -645,7 +680,7 @@
 
             try {
                 const subscription = await getPushSubscription();
-                if (!subscription) throw new Error("PUSH_PERMISSION_REQUIRED");
+                if (!subscription) throw new Error("PUSH_BLOCKED");
                 let result = await requestEnableNotifications({});
                 // Συνδέσεις χωρίς σφραγισμένο κωδικό, ή κωδικός που άλλαξε από
                 // τότε: εκεί μόνο χρειάζεται να τον πληκτρολογήσεις.
@@ -656,13 +691,21 @@
                         confirmLabel: "Ενεργοποίηση",
                         input: true,
                     });
-                    if (!password) throw new Error("PASSWORD_REQUIRED");
+                    // Ακύρωσες εσύ: δεν υπάρχει τίποτα να σου εξηγήσουμε.
+                    if (!password) {
+                        setNotificationToggle(false);
+                        return;
+                    }
                     result = await requestEnableNotifications({ password });
                 }
-                if (!result.ok) throw new Error("ENABLE_FAILED");
+                if (!result.ok) throw new Error(result.code || "ENABLE_FAILED");
                 setNotificationToggle(true);
-            } catch {
+            } catch (error) {
                 setNotificationToggle(false);
+                setDashboardStatus(
+                    NOTIFICATION_ERRORS[error.message] || "Οι ειδοποιήσεις δεν ενεργοποιήθηκαν. Δοκίμασε ξανά.",
+                    true,
+                );
             }
             return;
         }
@@ -675,9 +718,10 @@
             if (!response.ok) throw new Error("DISABLE_FAILED");
             await unregisterPushWorker();
             notificationSetupPromise = null;
-            localStorage.removeItem(notificationsEnabledKey);
+            setNotificationToggle(false);
         } catch {
             notificationToggleInput.checked = true;
+            setDashboardStatus("Οι ειδοποιήσεις δεν απενεργοποιήθηκαν. Δοκίμασε ξανά.", true);
         }
     }
 
@@ -730,7 +774,25 @@
     // Χωρίς αυτό το "πριν 2 λεπτά" θα έμενε για πάντα "πριν 2 λεπτά".
     setInterval(paintLastUpdated, 60 * 1000);
 
+    // Ένα δεύτερο Enter ή διπλό πάτημα όσο περιμένουμε θα έστελνε δεύτερο
+    // login, που μετράει στο όριο προσπαθειών του server.
+    let loginInFlight = false;
+
     async function startLogin(username, password) {
+        if (loginInFlight) return;
+        if (!username || !password) {
+            setLoginStatus("Συμπλήρωσε όνομα χρήστη και κωδικό.");
+            return;
+        }
+        loginInFlight = true;
+        try {
+            await sendLogin(username, password);
+        } finally {
+            loginInFlight = false;
+        }
+    }
+
+    async function sendLogin(username, password) {
         const attemptId = ++loginAttempt;
         dashboardReady = false;
         setLoginStatus("");
@@ -2618,6 +2680,7 @@
             const data = await response.json();
 
             if (response.status === 401) throw new Error("INVALID_CREDENTIALS");
+            if (response.status === 429) throw new Error("RATE_LIMITED");
             if (!response.ok || !data.ok) throw new Error("BACKFILL_FAILED");
 
             await loadHistory();
@@ -2631,7 +2694,9 @@
             setHistoryNote(
                 error.message === "INVALID_CREDENTIALS"
                     ? "Λάθος κωδικός."
-                    : "Η εισαγωγή απέτυχε. Δοκιμάστε ξανά.",
+                    : error.message === "RATE_LIMITED"
+                      ? "Πολλές εισαγωγές σε λίγη ώρα. Δοκιμάστε ξανά σε μία ώρα."
+                      : "Η εισαγωγή απέτυχε. Δοκιμάστε ξανά.",
                 true,
             );
         } finally {

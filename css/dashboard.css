@@ -869,6 +869,11 @@
         transform: translateX(16px);
     }
 
+    /* Όσο τρέχει μια αλλαγή ο διακόπτης δεν πατιέται· να φαίνεται κιόλας. */
+    .sd-wrapper .sd-notification-toggle input:disabled + .sd-toggle-track {
+        opacity: 0.55;
+    }
+
     .sd-wrapper .sd-notification-toggle input:focus-visible + .sd-toggle-track {
         outline: 2px solid var(--mint-teal);
         outline-offset: 3px;

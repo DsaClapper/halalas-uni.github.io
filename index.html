@@ -186,7 +186,7 @@
                             Ειδοποιήσεις
                             <!-- Χωρίς αυτή τη γραμμή ο διακόπτης δεν λέει τι
                                  δίνει πριν ζητήσει τη συναίνεσή σου. -->
-                            <small>Μάθε για νέο βαθμό ή προθεσμία χωρίς να μπαίνεις</small>
+                            <small id="notificationHint">Μάθε για νέο βαθμό ή προθεσμία χωρίς να μπαίνεις</small>
                         </span>
                         <input type="checkbox" id="notificationToggleInput" />
                         <span class="sd-toggle-track" aria-hidden="true"><span></span></span>
@@ -548,6 +548,13 @@
         return subscription;
     }
 
+    // Ειδοποιήσεις μόνο όσο είσαι συνδεδεμένος με «Remember me», όπως σε κάθε
+    // εφαρμογή: χωρίς αυτό ο διακόπτης μένει κλειστός και λέει τι λείπει.
+    // Ένας παλιός server δεν στέλνει το πεδίο· τότε επιτρέπεται.
+    function notificationsAllowed() {
+        return !currentData || currentData.notificationsAllowed !== false;
+    }
+
     function updateNotificationToggle() {
         if (!supportsPushNotifications()) {
             notificationToggle.hidden = true;
@@ -555,6 +562,16 @@
         }
 
         notificationToggle.hidden = false;
+        const allowed = notificationsAllowed();
+        document.getElementById("notificationHint").textContent = allowed
+            ? "Μάθε για νέο βαθμό ή προθεσμία χωρίς να μπαίνεις"
+            : "Συνδέσου με «Remember me» για να λαμβάνεις ειδοποιήσεις.";
+        if (!allowed) {
+            notificationToggleInput.disabled = true;
+            notificationToggleInput.checked = false;
+            return;
+        }
+        if (!notificationToggleBusy) notificationToggleInput.disabled = false;
         // Μια αλλαγή σε εξέλιξη έχει ήδη βάλει τον διακόπτη εκεί που πάει.
         if (notificationToggleBusy) return;
         notificationToggleInput.checked = localStorage.getItem(notificationsEnabledKey) === "true";
@@ -585,6 +602,7 @@
         if (!supportsPushNotifications()) return;
         // Πρώτα ό,τι θυμάται η συσκευή, για να μην περιμένει ο διακόπτης το δίκτυο.
         updateNotificationToggle();
+        if (!notificationsAllowed()) return;
         const touches = notificationToggleTouches;
 
         // Restore an existing opt-in silently, without requesting permission on page load.
@@ -638,7 +656,8 @@
         PUSH_BLOCKED: "Οι ειδοποιήσεις είναι αποκλεισμένες για αυτή τη σελίδα. Επίτρεψέ τες από τις ρυθμίσεις του browser.",
         RATE_LIMITED: "Πολλές προσπάθειες. Δοκίμασε ξανά σε ένα λεπτό.",
         UPSTREAM_ERROR: "Το eLearn δεν απαντά αυτή τη στιγμή. Δοκίμασε ξανά αργότερα.",
-        INVALID_CREDENTIALS: "Λάθος κωδικός. Οι ειδοποιήσεις δεν ενεργοποιήθηκαν.",
+        REMEMBER_REQUIRED: "Συνδέσου ξανά με «Remember me» για να λαμβάνεις ειδοποιήσεις.",
+        INVALID_CREDENTIALS: "Το eLearn δεν δέχτηκε τον κωδικό σου. Συνδέσου ξανά.",
     };
 
     async function unregisterPushWorker() {
@@ -660,14 +679,15 @@
             await changeNotifications(enabled);
         } finally {
             notificationToggleBusy = false;
-            notificationToggleInput.disabled = false;
+            notificationToggleInput.disabled = !notificationsAllowed();
         }
     }
 
     async function changeNotifications(enabled) {
         if (enabled) {
-            // Ο server έχει ήδη τον κωδικό της σύνδεσης (σφραγισμένο), οπότε
-            // δεν τον ξαναζητάμε· ζητάμε μόνο τη συναίνεση να τον κρατήσει.
+            // Ο server έχει ήδη τον κωδικό της σύνδεσης «Remember me»
+            // (σφραγισμένο), οπότε δεν τον ζητάμε ποτέ· μόνο τη συναίνεση να
+            // τον κρατήσει.
             const confirmed = await openAppModal({
                 title: "Ενεργοποίηση ειδοποιήσεων",
                 message: "Για να ελέγχουμε τους βαθμούς σας στο παρασκήνιο, ο κωδικός σας θα μείνει αποθηκευμένος κρυπτογραφημένος στον server. Μπορείτε να τις απενεργοποιήσετε όποτε θέλετε.",
@@ -681,23 +701,7 @@
             try {
                 const subscription = await getPushSubscription();
                 if (!subscription) throw new Error("PUSH_BLOCKED");
-                let result = await requestEnableNotifications({});
-                // Συνδέσεις χωρίς σφραγισμένο κωδικό, ή κωδικός που άλλαξε από
-                // τότε: εκεί μόνο χρειάζεται να τον πληκτρολογήσεις.
-                if (!result.ok && (result.code === "PASSWORD_REQUIRED" || result.code === "INVALID_CREDENTIALS")) {
-                    const password = await openAppModal({
-                        title: "Ενεργοποίηση ειδοποιήσεων",
-                        message: "Εισάγετε τον κωδικό σας UOC για να ενεργοποιηθούν οι ειδοποιήσεις.",
-                        confirmLabel: "Ενεργοποίηση",
-                        input: true,
-                    });
-                    // Ακύρωσες εσύ: δεν υπάρχει τίποτα να σου εξηγήσουμε.
-                    if (!password) {
-                        setNotificationToggle(false);
-                        return;
-                    }
-                    result = await requestEnableNotifications({ password });
-                }
+                const result = await requestEnableNotifications({});
                 if (!result.ok) throw new Error(result.code || "ENABLE_FAILED");
                 setNotificationToggle(true);
             } catch (error) {
@@ -711,9 +715,13 @@
         }
 
         try {
+            // Κλείνει μόνο αυτή η συσκευή· οι άλλες σου συνεχίζουν.
+            const endpoint = await currentPushEndpoint().catch(() => "");
             const response = await fetch(`${notificationsBaseUrl}/disable`, {
                 credentials: "include",
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(endpoint ? { endpoint } : {}),
             });
             if (!response.ok) throw new Error("DISABLE_FAILED");
             await unregisterPushWorker();
@@ -1198,6 +1206,10 @@
                 currentData = null;
                 notificationSetupPromise = null;
                 notificationToggleInput.checked = false;
+                // Η αποσύνδεση σταματά τις ειδοποιήσεις σε αυτή τη συσκευή (ο
+                // server σβήνει τη συνδρομή της)· εδώ φεύγει και το τοπικό κομμάτι.
+                localStorage.removeItem(notificationsEnabledKey);
+                if (supportsPushNotifications()) unregisterPushWorker().catch(() => {});
                 resetFiles();
                 $(".login-wrapper").stop(true, true).fadeIn(250);
         });

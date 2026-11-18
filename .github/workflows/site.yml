@@ -1,0 +1,35 @@
+name: site
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.48.2-noble
+    env:
+      NODE_PATH: /tmp/pw/node_modules
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stamping
+        run: node --test tests/stamp.test.mjs
+      - name: Playwright
+        run: mkdir -p /tmp/pw && npm i --prefix /tmp/pw --silent --no-audit --no-fund playwright@1.48.2
+      - name: Browser tests
+        run: node tests/run.mjs
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stamp with the commit
+        run: node tools/stamp.mjs . _site "${GITHUB_SHA::7}"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site

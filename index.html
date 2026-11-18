@@ -1128,6 +1128,11 @@
 
     document.getElementById("updateReloadBtn").addEventListener("click", () => location.reload());
 
+    // Ο service worker (sw.js) φέρνει φρέσκια σελίδα σε κάθε άνοιγμα, όχι μόνο
+    // σε όσους άνοιξαν ειδοποιήσεις. Ίδιο URL με το getPushSubscription, ώστε
+    // να μένει μία καταχώρηση.
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20260926").catch(() => {});
+
     // Η αρχική τιμή μετριέται μια φορά στο άνοιγμα· μετά ελέγχουμε όταν
     // επιστρέφεις στην εφαρμογή, που είναι η στιγμή που ένα deploy μπορεί να
     // έχει μεσολαβήσει χωρίς να το ξέρεις.

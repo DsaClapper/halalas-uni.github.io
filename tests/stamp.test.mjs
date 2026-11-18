@@ -77,3 +77,10 @@ test("tests, tools and docs are not published", async () => {
     assert.deepEqual(["tests", "tools", "docs", ".github", ".git"].filter(exists), []);
     assert.ok(exists("CNAME") && exists("index.html") && exists("imgs/l.png"));
 });
+
+test("an output folder inside the source is not copied into itself", async () => {
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-src-"));
+    fs.writeFileSync(path.join(src, "index.html"), "x");
+    await stamp(src, path.join(src, "_site"), V);
+    assert.deepEqual(fs.readdirSync(path.join(src, "_site")), ["index.html"]);
+});

@@ -26,14 +26,18 @@ function stampJs(text, version) {
         .replace(SW_REGISTER, (_, q) => `register(${q}/sw.js?v=${version}${q}`);
 }
 
-async function copy(src, out, version, top = true) {
+// `skip`: ο ίδιος ο φάκελος εξόδου, όταν είναι μέσα στην πηγή (το CI γράφει
+// στο ./_site), για να μην αντιγραφεί μέσα στον εαυτό του.
+async function copy(src, out, version, skip, top = true) {
+    const entries = await fs.readdir(src, { withFileTypes: true });
     await fs.mkdir(out, { recursive: true });
-    for (const entry of await fs.readdir(src, { withFileTypes: true })) {
+    for (const entry of entries) {
         if (top && SKIP.has(entry.name)) continue;
         const from = path.join(src, entry.name);
         const to = path.join(out, entry.name);
+        if (from === skip) continue;
         if (entry.isDirectory()) {
-            await copy(from, to, version, false);
+            await copy(from, to, version, skip, false);
         } else if (entry.name.endsWith(".html")) {
             await fs.writeFile(to, stampHtml(await fs.readFile(from, "utf8"), version));
         } else if (entry.name.endsWith(".js")) {
@@ -46,7 +50,7 @@ async function copy(src, out, version, top = true) {
 
 export async function stamp(src, out, version) {
     if (!/^[0-9A-Za-z._-]+$/.test(version)) throw new Error(`bad version: ${version}`);
-    await copy(path.resolve(src), path.resolve(out), version);
+    await copy(path.resolve(src), path.resolve(out), version, path.resolve(out));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

@@ -291,7 +291,11 @@ async function open(browser, scenario) {
         assert.equal((await app.state()).on, true);
         await app.clickToggle();
         // A refresh that brought new data redraws the dashboard mid-request.
-        await app.page.evaluate(() => renderDashboardData(currentData, true));
+        await app.page.evaluate(async () => {
+            const response = await fetch("https://uni-api.halalas-services.xyz/auth/session", { credentials: "include" });
+            const { renderDashboardData } = await import("/js/app.js");
+            renderDashboardData(await response.json(), true);
+        });
         await app.page.waitForTimeout(300);
         assert.equal((await app.state()).on, false, "still off while the request runs");
         await app.page.waitForTimeout(2300);
@@ -308,6 +312,7 @@ async function open(browser, scenario) {
 
     await check("a second dialog does not strand the first", { status: OFF }, async (app) => {
         const first = await app.page.evaluate(async () => {
+            const { openAppModal, closeAppModal } = await import("/js/app.js");
             const pending = openAppModal({ title: "α", message: "α" });
             openAppModal({ title: "β", message: "β" });
             const answer = await Promise.race([pending, new Promise((r) => setTimeout(() => r("stranded"), 600))]);

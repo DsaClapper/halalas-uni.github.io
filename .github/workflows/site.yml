@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Stamping
         run: node --test tests/stamp.test.mjs
+      - name: Undeclared names
+        run: node tests/names.mjs
       - name: Playwright
         run: mkdir -p /tmp/pw && npm i --prefix /tmp/pw --silent --no-audit --no-fund playwright@1.48.2
       - name: Browser tests

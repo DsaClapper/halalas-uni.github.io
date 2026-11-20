@@ -4,7 +4,8 @@ import { openAppModal } from "./modal.js";
 import { notificationToggleInput, supportsPushNotifications, unregisterPushWorker } from "./notifications.js";
 import { refreshDashboardData } from "./refresh.js";
 import { DEFAULT_TAB, gradeSectionOpen, gradesFilter, gradesSearch, selectTab } from "./grades.js";
-import { RenderloadingScreen, historyFilter, historyToggleInput, renderDashboardData, resetFiles, setHistoryNote } from "./app.js";
+import { historyFilter, historyToggleInput, setHistoryNote } from "./history.js";
+import { RenderloadingScreen, renderDashboardData, resetFiles } from "./app.js";
 
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");

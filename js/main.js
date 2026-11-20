@@ -1,4 +1,4 @@
-// js/app.js — εκκίνηση της εφαρμογής και το dashboard που τα δένει όλα.
+// js/main.js — εκκίνηση της εφαρμογής και το dashboard που τα δένει όλα.
 import { appState, rememberSessionKey, scrollHost } from "./state.js";
 import { preparePushNotifications } from "./notifications.js";
 import { restoreSession, returnToLogin } from "./login.js";

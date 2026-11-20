@@ -293,7 +293,7 @@ async function open(browser, scenario) {
         // A refresh that brought new data redraws the dashboard mid-request.
         await app.page.evaluate(async () => {
             const response = await fetch("https://uni-api.halalas-services.xyz/auth/session", { credentials: "include" });
-            const { renderDashboardData } = await import("/js/app.js");
+            const { renderDashboardData } = await import("/js/main.js");
             renderDashboardData(await response.json(), true);
         });
         await app.page.waitForTimeout(300);

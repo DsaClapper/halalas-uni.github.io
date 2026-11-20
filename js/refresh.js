@@ -2,7 +2,7 @@
 import { appState, authBaseUrl, scrollHost } from "./state.js";
 import { RELOGIN_MESSAGE, returnToLogin } from "./login.js";
 import { filesLoaded, loadFiles } from "./files.js";
-import { renderDashboardData } from "./app.js";
+import { renderDashboardData } from "./main.js";
 
 function setDashboardStatus(message, isError = false) {
     const status = document.getElementById("dashboardStatus");

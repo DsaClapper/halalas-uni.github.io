@@ -165,13 +165,14 @@ const NOTIFICATION_ERRORS = {
     INVALID_CREDENTIALS: "Το eLearn δεν δέχτηκε τον κωδικό σου. Συνδέσου ξανά.",
 };
 
-async function unregisterPushWorker() {
+// Μόνο η συνδρομή push. Ο service worker μένει: φέρνει και τη φρέσκια σελίδα
+// σε κάθε άνοιγμα, όχι μόνο τις ειδοποιήσεις.
+async function unsubscribePush() {
     const registration = await navigator.serviceWorker.getRegistration("/");
     if (!registration) return;
 
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) await subscription.unsubscribe();
-    await registration.unregister();
 }
 
 async function setNotificationsEnabled(enabled) {
@@ -229,7 +230,7 @@ async function changeNotifications(enabled) {
             body: JSON.stringify(endpoint ? { endpoint } : {}),
         });
         if (!response.ok) throw new Error("DISABLE_FAILED");
-        await unregisterPushWorker();
+        await unsubscribePush();
         appState.notificationSetupPromise = null;
         setNotificationToggle(false);
     } catch {
@@ -241,4 +242,4 @@ notificationToggleInput.addEventListener("change", () => {
     setNotificationsEnabled(notificationToggleInput.checked);
 });
 
-export { notificationToggleInput, preparePushNotifications, supportsPushNotifications, unregisterPushWorker };
+export { notificationToggleInput, preparePushNotifications, supportsPushNotifications, unsubscribePush };

@@ -117,13 +117,32 @@ const build_ = async (page) => (await page.content()).match(/<!-- build (\w+) --
         assert.equal(await build_(page), "v2");
     });
 
-    await check("offline still opens what was last seen", async ({ ctx, page }) => {
-        server.setRoot(builds.v1);
-        await page.goto(URL_, T);
+    // «Χωρίς δίκτυο» = ο server κλείνει. Το ctx.setOffline δεν κόβει τα
+    // αιτήματα του service worker, οπότε δεν θα έλεγχε τίποτα.
+    const offlineOpen = async (page, site) => {
+        await site.close();
+        await page.goto("about:blank");
+        return page.goto(`${site.url}/index.html`, T).then(() => true, () => false);
+    };
+
+    // Μέσα στα 10' της cache, χωρίς δίκτυο ανοίγει ό,τι είδες τελευταία (όπως
+    // και χωρίς SW).
+    await check("offline still opens what was last seen", async ({ page }) => {
+        const site = await startServer({ root: builds.v1 });
+        await page.goto(`${site.url}/index.html`, T);
         await controlled(page);
-        await ctx.setOffline(true);
-        await reopen(page);
+        assert.equal(await offlineOpen(page, site), true, "the page opened");
         assert.equal(await build_(page), "v1");
+    });
+
+    // Μετά τα 10', χωρίς δίκτυο ο browser δείχνει τη δική του σελίδα, όπως
+    // πάντα· όχι μια παλιά σελίδα της οποίας τα css/js μπορεί να έχουν λήξει.
+    await check("offline after the page cache expired is the browser's own page", async ({ page }) => {
+        const site = await startServer({ root: builds.v1, htmlMaxAge: 0 });
+        await page.goto(`${site.url}/index.html`, T);
+        await controlled(page);
+        const opened = await offlineOpen(page, site);
+        assert.equal(opened && (await build_(page)) === "v1", false, "an expired page came back offline");
     });
 
     await browser.close();

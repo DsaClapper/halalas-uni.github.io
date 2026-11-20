@@ -46,10 +46,11 @@ async function open(browser, scenario) {
         const subscription = {
             endpoint: ENDPOINT,
             toJSON: () => ({ endpoint: ENDPOINT, keys: { p256dh: "p", auth: "a" } }),
-            unsubscribe: async () => true,
+            unsubscribe: async () => { window.__unsubscribes++; return true; },
         };
         let current = subscribed ? subscription : null;
         window.__unregisters = 0;
+        window.__unsubscribes = 0;
         const registration = {
             pushManager: { getSubscription: async () => current, subscribe: async () => (current = subscription) },
             unregister: async () => { window.__unregisters++; return true; },
@@ -231,8 +232,12 @@ async function open(browser, scenario) {
         await app.page.click("#signOutBtn", { timeout: 3000 });
         await app.confirm();
         await app.page.waitForTimeout(500);
-        const after = await app.page.evaluate((KEY) => ({ key: localStorage.getItem(KEY), unregisters: window.__unregisters }), KEY);
-        assert.deepEqual(after, { key: null, unregisters: 1 });
+        const after = await app.page.evaluate((KEY) => ({
+            key: localStorage.getItem(KEY), unsubscribes: window.__unsubscribes, unregisters: window.__unregisters,
+        }), KEY);
+        // Η συνδρομή push φεύγει· ο service worker μένει, γιατί αυτός φέρνει
+        // τη φρέσκια σελίδα στο επόμενο άνοιγμα.
+        assert.deepEqual(after, { key: null, unsubscribes: 1, unregisters: 0 });
     });
 
     // A switch that slides back with no word of why looks broken.

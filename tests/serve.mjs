@@ -17,7 +17,8 @@ const TYPES = {
     ".json": "application/json",
 };
 
-export async function startServer({ root, port = 0 }) {
+// `htmlMaxAge`: για να δοκιμαστεί και η περίπτωση «η cache της σελίδας έληξε».
+export async function startServer({ root, port = 0, htmlMaxAge = 600 }) {
     let base = path.resolve(root);
     const server = http.createServer(async (req, res) => {
         let rel = decodeURIComponent(new URL(req.url, "http://x").pathname);
@@ -32,7 +33,7 @@ export async function startServer({ root, port = 0 }) {
             const modified = new Date(Math.floor(stat.mtimeMs / 1000) * 1000);
             const headers = {
                 "Content-Type": TYPES[path.extname(file)] || "application/octet-stream",
-                "Cache-Control": file.endsWith(".html") ? "max-age=600" : "max-age=14400",
+                "Cache-Control": file.endsWith(".html") ? `max-age=${htmlMaxAge}` : "max-age=14400",
                 "Last-Modified": modified.toUTCString(),
             };
             const since = Date.parse(req.headers["if-modified-since"] || "");
@@ -54,6 +55,12 @@ export async function startServer({ root, port = 0 }) {
         setRoot(dir) {
             base = path.resolve(dir);
         },
-        close: () => new Promise((resolve) => server.close(resolve)),
+        // Κλείνει και τις ανοιχτές συνδέσεις: έτσι το «χωρίς δίκτυο» είναι
+        // πραγματικό και για τον service worker (το setOffline του Playwright
+        // δεν φτάνει ως εκεί).
+        close: () => new Promise((resolve) => {
+            server.close(resolve);
+            server.closeAllConnections();
+        }),
     };
 }

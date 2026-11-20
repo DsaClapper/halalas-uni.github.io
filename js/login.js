@@ -1,7 +1,7 @@
 // js/login.js — σύνδεση, επαναφορά συνεδρίας, αποσύνδεση.
 import { appState, authBaseUrl, notificationsEnabledKey, rememberSessionKey } from "./state.js";
 import { openAppModal } from "./modal.js";
-import { notificationToggleInput, supportsPushNotifications, unregisterPushWorker } from "./notifications.js";
+import { notificationToggleInput, supportsPushNotifications, unsubscribePush } from "./notifications.js";
 import { refreshDashboardData } from "./refresh.js";
 import { DEFAULT_TAB, gradeSectionOpen, gradesFilter, gradesSearch, selectTab } from "./grades.js";
 import { historyFilter, historyToggleInput, setHistoryNote } from "./history.js";
@@ -179,7 +179,7 @@ function signOut() {
             // Η αποσύνδεση σταματά τις ειδοποιήσεις σε αυτή τη συσκευή (ο
             // server σβήνει τη συνδρομή της)· εδώ φεύγει και το τοπικό κομμάτι.
             localStorage.removeItem(notificationsEnabledKey);
-            if (supportsPushNotifications()) unregisterPushWorker().catch(() => {});
+            if (supportsPushNotifications()) unsubscribePush().catch(() => {});
             resetFiles();
             $(".login-wrapper").stop(true, true).fadeIn(250);
     });

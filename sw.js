@@ -1,8 +1,9 @@
 // Το άνοιγμα της εφαρμογής ρωτάει πάντα το δίκτυο για τη σελίδα: το GitHub
 // Pages την κρατάει 10' στην cache, οπότε χωρίς αυτό ένα deploy φαινόταν
-// αργότερα. Μία γρήγορη ερώτηση (συνήθως 304). Χωρίς δίκτυο, ό,τι έχει ο
-// browser, όσο παλιό κι αν είναι. Κανένα άλλο αίτημα δεν περνάει από εδώ, και
-// δεν κρατάμε δική μας cache.
+// αργότερα. Μία γρήγορη ερώτηση (συνήθως 304). Χωρίς δίκτυο, ό,τι θα έκανε ο
+// browser χωρίς εμάς: η σελίδα από την cache του όσο είναι ακόμα φρέσκια, αλλιώς
+// η δική του σελίδα «χωρίς σύνδεση» — όχι μια παλιά σελίδα με css/js που έχουν
+// λήξει. Κανένα άλλο αίτημα δεν περνάει από εδώ, και δεν κρατάμε δική μας cache.
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", (event) => {
@@ -10,7 +11,7 @@ self.addEventListener("fetch", (event) => {
     // Με το URL, όχι με το ίδιο το request: ένα request πλοήγησης δεν δέχεται
     // άλλες ρυθμίσεις cache (TypeError).
     const url = event.request.url;
-    event.respondWith(fetch(url, { cache: "no-cache" }).catch(() => fetch(url, { cache: "force-cache" })));
+    event.respondWith(fetch(url, { cache: "no-cache" }).catch(() => fetch(url)));
 });
 
 self.addEventListener("push", (event) => {

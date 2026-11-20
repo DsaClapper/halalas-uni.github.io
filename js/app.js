@@ -1,8 +1,7 @@
-// js/app.js — η εφαρμογή. Ήταν inline στο index.html· μεταφέρεται κομμάτι
-// κομμάτι σε δικά της modules.
+// js/app.js — η εφαρμογή· τα κομμάτια της μεταφέρονται ένα ένα σε δικά τους modules.
+import { appState, authBaseUrl, notificationsBaseUrl, notificationsEnabledKey, rememberSessionKey, scrollHost } from "./state.js";
+import { escapeHtml } from "./util.js";
 
-const authBaseUrl = "https://uni-api.halalas-services.xyz/auth";
-const rememberSessionKey = "halalasRememberSession";
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const rememberInput = document.getElementById("remember");
@@ -15,15 +14,7 @@ const appModalMessage = document.getElementById("appModalMessage");
 const appModalInputGroup = document.getElementById("appModalInputGroup");
 const appModalInput = document.getElementById("appModalInput");
 const appModalConfirm = document.getElementById("appModalConfirm");
-
-let loginAttempt = 0;
-let dashboardReady = false;
-let loaderRunId = 0;
-let currentData = null;
 let messages = [];
-let notificationSetupPromise = null;
-const notificationsBaseUrl = "https://uni-api.halalas-services.xyz/notifications";
-const notificationsEnabledKey = "halalasNotificationsEnabled";
 let modalResolve = null;
 
 function closeAppModal(result = null) {
@@ -125,7 +116,7 @@ async function getPushSubscription() {
 // εφαρμογή: χωρίς αυτό ο διακόπτης μένει κλειστός και λέει τι λείπει.
 // Ένας παλιός server δεν στέλνει το πεδίο· τότε επιτρέπεται.
 function notificationsAllowed() {
-    return !currentData || currentData.notificationsAllowed !== false;
+    return !appState.currentData || appState.currentData.notificationsAllowed !== false;
 }
 
 function updateNotificationToggle() {
@@ -183,8 +174,8 @@ async function preparePushNotifications() {
         localStorage.getItem(notificationsEnabledKey) === "true" &&
         Notification.permission === "granted"
     ) {
-        notificationSetupPromise = getPushSubscription().catch(() => null);
-        await notificationSetupPromise;
+        appState.notificationSetupPromise = getPushSubscription().catch(() => null);
+        await appState.notificationSetupPromise;
     }
 
     // Χωρίς άδεια δεν φτάνει καμία ειδοποίηση εδώ, ό,τι κι αν λέει ο server.
@@ -298,7 +289,7 @@ async function changeNotifications(enabled) {
         });
         if (!response.ok) throw new Error("DISABLE_FAILED");
         await unregisterPushWorker();
-        notificationSetupPromise = null;
+        appState.notificationSetupPromise = null;
         setNotificationToggle(false);
     } catch {
         notificationToggleInput.checked = true;
@@ -374,18 +365,18 @@ async function startLogin(username, password) {
 }
 
 async function sendLogin(username, password) {
-    const attemptId = ++loginAttempt;
-    dashboardReady = false;
+    const attemptId = ++appState.loginAttempt;
+    appState.dashboardReady = false;
     setLoginStatus("");
     if (rememberInput.checked) {
         localStorage.setItem(rememberSessionKey, "true");
     } else {
         localStorage.removeItem(rememberSessionKey);
     }
-    loaderRunId++;
+    appState.loaderRunId++;
     $(".dashboard-loader-wrapper").stop(true, true).hide();
     $("#loginWrapper").stop(true, true).fadeOut(300, () => {
-        if (attemptId === loginAttempt && !dashboardReady) {
+        if (attemptId === appState.loginAttempt && !appState.dashboardReady) {
             RenderloadingScreen("login");
         }
     });
@@ -402,13 +393,13 @@ async function sendLogin(username, password) {
             }),
         });
         const data = await response.json();
-        if (attemptId !== loginAttempt) return;
+        if (attemptId !== appState.loginAttempt) return;
         if (response.status === 401) returnToLogin("Λάθος στοιχεία σύνδεσης.");
         else if (response.status === 429) returnToLogin("Πολλές προσπάθειες, δοκίμασε ξανά σε λίγο.");
         else if (!response.ok || !data.ok) returnToLogin(data.message || "Δεν ήταν δυνατή η σύνδεση.");
         else renderDashboardData(data);
     } catch {
-        if (attemptId === loginAttempt) returnToLogin("Δεν ήταν δυνατή η σύνδεση. Δοκίμασε ξανά.");
+        if (attemptId === appState.loginAttempt) returnToLogin("Δεν ήταν δυνατή η σύνδεση. Δοκίμασε ξανά.");
     }
 }
 
@@ -529,7 +520,7 @@ function renderSummary(data) {
 // δεν φαινόταν όσο η ανανέωση ήταν ένα κουμπί που πατάς σπάνια, αλλά με το
 // pull-to-refresh έγινε αναλαμπή σε κάθε τράβηγμα.
 function renderDashboardData(data, isRefresh = false) {
-    currentData = data;
+    appState.currentData = data;
     renderStudentDashboard(data, isRefresh);
     renderGrades(data);
     renderSummary(data);
@@ -556,15 +547,6 @@ document.getElementById("loginForm").addEventListener("submit", (event) => {
 notificationToggleInput.addEventListener("change", () => {
     setNotificationsEnabled(notificationToggleInput.checked);
 });
-// Το ύψος του body ήταν καρφωμένο σε window.innerHeight με JavaScript, που
-// σε κινητό αλλάζει κάθε φορά που κρύβεται ή εμφανίζεται η μπάρα του
-// browser — κλασική πηγή για κομμένο περιεχόμενο και διπλό scrollbar.
-// Το `100dvh` στο CSS κάνει το ίδιο πράγμα σωστά και χωρίς listener.
-
-// Η κεφαλίδα κρατάει 210px σε desktop και ~120px σε κινητό για ένα
-// λογότυπο. Μαζεύεται μόλις αρχίσεις να κυλάς, οπότε ο χώρος πάει σε αυτό
-// που ήρθες να δεις.
-const scrollHost = document.querySelector(".sd-content") || window;
 function updateHeaderShrink() {
     const offset = scrollHost === window ? window.scrollY : scrollHost.scrollTop;
     document.body.classList.toggle("is-scrolled", offset > 24);
@@ -716,17 +698,17 @@ const REFRESH_ON_RETURN_AFTER_MS = 15 * 60 * 1000;
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;
     checkForUpdate();
-    if (dashboardReady && currentData && (!lastUpdatedAt || Date.now() - lastUpdatedAt > REFRESH_ON_RETURN_AFTER_MS)) {
+    if (appState.dashboardReady && appState.currentData && (!lastUpdatedAt || Date.now() - lastUpdatedAt > REFRESH_ON_RETURN_AFTER_MS)) {
         refreshDashboardData({ silent: true });
     }
 });
 updateHeaderShrink();
 
 function returnToLogin(message = "") {
-    loginAttempt++;
-    dashboardReady = false;
-    currentData = null;
-    loaderRunId++;
+    appState.loginAttempt++;
+    appState.dashboardReady = false;
+    appState.currentData = null;
+    appState.loaderRunId++;
     // Ο επόμενος που θα συνδεθεί μπορεί να είναι άλλος φοιτητής.
     resetFiles();
     document.body.classList.remove("dashboard-mode");
@@ -751,9 +733,9 @@ document.getElementById("signOutBtn").addEventListener("click", async () => {
 // Αρχείων χωρίς το παράθυρο επιβεβαίωσης: εκεί το logout είναι αυτό που
 // ζήτησες πατώντας, δεν χρειάζεται δεύτερη ερώτηση.
 function signOut() {
-    loginAttempt++;
-    dashboardReady = false;
-    loaderRunId++;
+    appState.loginAttempt++;
+    appState.dashboardReady = false;
+    appState.loaderRunId++;
     fetch(`${authBaseUrl}/logout`, {
         credentials: "include",
         method: "POST",
@@ -766,11 +748,11 @@ function signOut() {
             document.getElementById("sdStudentID").textContent = "-";
             document.getElementById("sdGradesGrid").innerHTML = "";
             document.getElementById("sdHistoryTimeline").innerHTML = "";
-            historyEntries = [];
-            historyEnabled = false;
+            appState.historyEntries = [];
+            appState.historyEnabled = false;
             gradesSearch.value = "";
             gradesFilter.query = "";
-            assignmentsCourse = "";
+            appState.assignmentsCourse = "";
             gradeSectionOpen.clear();
             historyToggleInput.checked = false;
             historyFilter.innerHTML = `<option value="">Όλα τα μαθήματα</option>`;
@@ -781,8 +763,8 @@ function signOut() {
             usernameInput.value = "";
             rememberInput.checked = false;
             localStorage.removeItem(rememberSessionKey);
-            currentData = null;
-            notificationSetupPromise = null;
+            appState.currentData = null;
+            appState.notificationSetupPromise = null;
             notificationToggleInput.checked = false;
             // Η αποσύνδεση σταματά τις ειδοποιήσεις σε αυτή τη συσκευή (ο
             // server σβήνει τη συνδρομή της)· εδώ φεύγει και το τοπικό κομμάτι.
@@ -801,7 +783,7 @@ let refreshInFlight = null;
 // γράφει «Ανανέωση...» ούτε σφάλματα — δεν τη ζήτησες, και αν αποτύχει
 // απλώς μένουν τα δεδομένα που ήδη βλέπεις.
 function refreshDashboardData(options = {}) {
-    if (!currentData) return Promise.resolve();
+    if (!appState.currentData) return Promise.resolve();
     if (refreshInFlight) {
         // Αν περιμένει ήδη μια αθόρυβη και πατήσεις το κουμπί, να φαίνεται.
         if (!options.silent) setDashboardStatus("Ανανέωση δεδομένων...");
@@ -822,7 +804,7 @@ async function runRefresh({ silent = false } = {}) {
     const refreshButton = document.getElementById("refreshBtn");
     refreshButton.disabled = true;
     if (!silent) setDashboardStatus("Ανανέωση δεδομένων...");
-    const attemptAtStart = loginAttempt;
+    const attemptAtStart = appState.loginAttempt;
 
     try {
         // /auth/session επιστρέφει το στιγμιότυπο του login και δεν
@@ -836,7 +818,7 @@ async function runRefresh({ silent = false } = {}) {
         const data = await response.json();
 
         // Έκανες sign out όσο έτρεχε: η απάντηση είναι του προηγούμενου.
-        if (attemptAtStart !== loginAttempt || !currentData) return;
+        if (attemptAtStart !== appState.loginAttempt || !appState.currentData) return;
         if (response.status === 429) throw new Error("RATE_LIMITED");
         if (response.status === 401) {
             returnToLogin(data.code === "RELOGIN_REQUIRED" ? RELOGIN_MESSAGE : "Η σύνδεση έληξε. Συνδέσου ξανά.");
@@ -847,8 +829,8 @@ async function runRefresh({ silent = false } = {}) {
         // Τις περισσότερες φορές δεν έχει αλλάξει τίποτα. Τότε δεν ξαναζωγραφίζουμε:
         // μια αθόρυβη ανανέωση που φτάνει ενώ κυλάς ή έχεις πατήσει μια
         // κάρτα θα σου πετούσε το scroll για να δείξει τα ίδια πράγματα.
-        if (sameDashboardData(currentData, data)) {
-            currentData = data;
+        if (sameDashboardData(appState.currentData, data)) {
+            appState.currentData = data;
         } else {
             renderDashboardData(data, true);
         }
@@ -966,7 +948,7 @@ function renderStudentDashboard(responseData, isRefresh = false) {
 
     if (!user) return;
 
-    dashboardReady = true;
+    appState.dashboardReady = true;
     setDashboardStatus("");
     setLastUpdated();
 
@@ -1169,9 +1151,9 @@ function buildGradeCard(entry) {
 // από εκεί. Μία προσπάθεια ανά εξεταστική — μια διόρθωση μέσα στην ίδια
 // εξεταστική αντικαθιστά τον βαθμό της, δεν είναι νέα προσπάθεια.
 function courseAttempts(courseCode) {
-    if (!historyEnabled || !courseCode) return [];
+    if (!appState.historyEnabled || !courseCode) return [];
     const byPeriod = new Map();
-    for (const entry of historyEntries) {
+    for (const entry of appState.historyEntries) {
         if (entry.courseCode !== courseCode || typeof entry.grade !== "number") continue;
         const key = entry.examPeriod ?? "";
         const seen = byPeriod.get(key);
@@ -1364,13 +1346,13 @@ function revealGradeCard(cardKey, expand) {
     const find = () =>
         [...document.querySelectorAll("#sdGradesGrid .sd-course-card")].find((c) => c.dataset.key === cardKey);
     let card = find();
-    if (!card && currentData) {
+    if (!card && appState.currentData) {
         gradesFilter.status = "all";
         gradesFilter.category = "";
         gradesFilter.query = "";
         gradesSearch.value = "";
         saveGradesFilter();
-        renderGrades(currentData);
+        renderGrades(appState.currentData);
         card = find();
     }
     if (!card) return;
@@ -1608,26 +1590,26 @@ function renderGrades(data) {
             gradesFilter.query = "";
             gradesSearch.value = "";
             saveGradesFilter();
-            renderGrades(currentData);
+            renderGrades(appState.currentData);
         });
     }
 }
 
 gradesSearch.addEventListener("input", () => {
     gradesFilter.query = gradesSearch.value;
-    if (currentData) renderGrades(currentData);
+    if (appState.currentData) renderGrades(appState.currentData);
 });
 gradesStatusChips.addEventListener("click", (event) => {
     const chip = event.target.closest(".sd-chip");
     if (!chip) return;
     gradesFilter.status = chip.dataset.status;
     saveGradesFilter();
-    if (currentData) renderGrades(currentData);
+    if (appState.currentData) renderGrades(appState.currentData);
 });
 gradesCategoryFilter.addEventListener("change", () => {
     gradesFilter.category = gradesCategoryFilter.value;
     saveGradesFilter();
-    if (currentData) renderGrades(currentData);
+    if (appState.currentData) renderGrades(appState.currentData);
 });
 
 // Από την κάρτα ενός μαθήματος στο ιστορικό του: αλλάζει tab και εφαρμόζει
@@ -1662,9 +1644,6 @@ let assignmentsAvailable = false;
 
 const assignmentsCourseFilter = document.getElementById("assignmentsCourseFilter");
 const ASSIGNMENTS_VIEW_KEY = "halalas_assignments_view";
-// Το φίλτρο μαθήματος δεν αποθηκεύεται: αν το βρεις ενεργό αύριο θα
-// νομίζεις ότι εξαφανίστηκαν οι μισές προθεσμίες. Η προβολή αποθηκεύεται.
-let assignmentsCourse = "";
 let assignmentsView = "due";
 try {
     if (localStorage.getItem(ASSIGNMENTS_VIEW_KEY) === "course") assignmentsView = "course";
@@ -1806,13 +1785,13 @@ function renderAssignments() {
     const visible = (showAll
         ? assignmentEntries
         : assignmentEntries.filter((entry) => !entry.submitted && !isStale(entry, now))
-    ).filter((entry) => !assignmentsCourse || assignmentCourseKey(entry) === assignmentsCourse);
+    ).filter((entry) => !appState.assignmentsCourse || assignmentCourseKey(entry) === appState.assignmentsCourse);
 
     if (visible.length === 0) {
         assignmentsList.innerHTML = `<div class="sd-no-grades">${
             assignmentEntries.length === 0
                 ? "Δεν βρέθηκαν εργασίες με προθεσμία στο Moodle."
-                : assignmentsCourse
+                : appState.assignmentsCourse
                   ? "Καμία εκκρεμότητα σε αυτό το μάθημα."
                   : "Καμία εκκρεμότητα — όλα τακτοποιημένα."
         }</div>`;
@@ -1921,12 +1900,12 @@ function paintAssignmentsCourseFilter() {
         const key = assignmentCourseKey(entry);
         if (key && !courses.has(key)) courses.set(key, entry.courseName || key);
     }
-    if (assignmentsCourse && !courses.has(assignmentsCourse)) assignmentsCourse = "";
+    if (appState.assignmentsCourse && !courses.has(appState.assignmentsCourse)) appState.assignmentsCourse = "";
     const options = [...courses.entries()].sort((a, b) => a[1].localeCompare(b[1], "el"));
     assignmentsCourseFilter.innerHTML =
         `<option value="">Όλα τα μαθήματα</option>` +
         options.map(([key, name]) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`).join("");
-    assignmentsCourseFilter.value = assignmentsCourse;
+    assignmentsCourseFilter.value = appState.assignmentsCourse;
     assignmentsCourseFilter.disabled = options.length === 0;
 
     document.querySelectorAll("#tabAssignments .sd-segment").forEach((button) => {
@@ -1939,7 +1918,7 @@ function paintAssignmentsCourseFilter() {
 // Από την κάρτα ενός μαθήματος στις εκκρεμότητές του, όπως το
 // «Ιστορικό μαθήματος» πηγαίνει στο ιστορικό.
 function openAssignmentsFor(key) {
-    assignmentsCourse = key;
+    appState.assignmentsCourse = key;
     selectTab("tabAssignments");
     renderAssignments();
 }
@@ -1950,7 +1929,7 @@ function applyAssignmentsPayload(data) {
     renderAssignments();
     // Οι κάρτες των βαθμών δείχνουν πόσες εκκρεμότητες έχει το καθένα,
     // και οι βαθμοί ζωγραφίζονται πριν φτάσουν οι εκκρεμότητες.
-    if (currentData) renderGrades(currentData);
+    if (appState.currentData) renderGrades(appState.currentData);
 }
 
 async function loadAssignments() {
@@ -2005,7 +1984,7 @@ async function refreshAssignments() {
 assignmentsRefreshBtn.addEventListener("click", refreshAssignments);
 assignmentsShowDoneInput.addEventListener("change", renderAssignments);
 assignmentsCourseFilter.addEventListener("change", () => {
-    assignmentsCourse = assignmentsCourseFilter.value;
+    appState.assignmentsCourse = assignmentsCourseFilter.value;
     renderAssignments();
 });
 document.querySelectorAll("#tabAssignments .sd-segment").forEach((button) => {
@@ -2033,9 +2012,6 @@ const historyFilter = document.getElementById("historyFilter");
 const historyNote = document.getElementById("historyNote");
 const historyTimeline = document.getElementById("sdHistoryTimeline");
 
-let historyEntries = [];
-let historyEnabled = false;
-
 // A result is identified by (course, exam period): sitting a course again is
 // a new attempt even when the mark is identical, and only a revision inside
 // the *same* period is the registry correcting itself.
@@ -2046,12 +2022,6 @@ const HISTORY_TYPE_LABELS = {
     corrected: "Διόρθωση",
     changed: "Αλλαγή βαθμού", // ιστορικές εγγραφές πριν τον διαχωρισμό
 };
-
-function escapeHtml(value) {
-    return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-    })[character]);
-}
 
 function setHistoryNote(message, isError = false) {
     historyNote.textContent = message;
@@ -2080,7 +2050,7 @@ function formatHistoryDate(entry) {
 function renderHistoryFilterOptions() {
     const selected = historyFilter.value;
     const courses = new Map();
-    historyEntries.forEach((entry) => {
+    appState.historyEntries.forEach((entry) => {
         if (entry.courseCode && !courses.has(entry.courseCode)) {
             courses.set(entry.courseCode, entry.title || entry.courseCode);
         }
@@ -2102,10 +2072,10 @@ function renderHistoryFilterOptions() {
 
 function renderHistory() {
     historyTimeline.innerHTML = "";
-    historyBackfillBtn.hidden = !historyEnabled;
-    historyFilter.hidden = !historyEnabled;
+    historyBackfillBtn.hidden = !appState.historyEnabled;
+    historyFilter.hidden = !appState.historyEnabled;
 
-    if (!historyEnabled) {
+    if (!appState.historyEnabled) {
         historyTimeline.innerHTML =
             // Ένα άδειο πάνελ που λέει μόνο "είναι κλειστό" δεν δίνει
             // κανέναν λόγο να το ανοίξεις. Το eduportal δείχνει πάντα
@@ -2124,8 +2094,8 @@ function renderHistory() {
 
     const courseCode = historyFilter.value;
     const visible = courseCode
-        ? historyEntries.filter((entry) => entry.courseCode === courseCode)
-        : historyEntries;
+        ? appState.historyEntries.filter((entry) => entry.courseCode === courseCode)
+        : appState.historyEntries;
 
     if (visible.length === 0) {
         historyTimeline.innerHTML = `<div class="sd-no-grades">${
@@ -2199,12 +2169,12 @@ async function loadHistory() {
         const data = await response.json();
         if (!response.ok || !data.ok) throw new Error("HISTORY_FAILED");
 
-        historyEnabled = data.enabled === true;
-        historyEntries = Array.isArray(data.history) ? data.history : [];
-        historyToggleInput.checked = historyEnabled;
+        appState.historyEnabled = data.enabled === true;
+        appState.historyEntries = Array.isArray(data.history) ? data.history : [];
+        historyToggleInput.checked = appState.historyEnabled;
         renderHistoryFilterOptions();
         renderHistory();
-        if (currentData) renderGrades(currentData);
+        if (appState.currentData) renderGrades(appState.currentData);
         setHistoryNote("");
     } catch {
         setHistoryNote("Δεν ήταν δυνατή η φόρτωση του ιστορικού.", true);
@@ -2399,7 +2369,7 @@ async function loadFiles({ refresh = false } = {}) {
         filesState = "ready";
         setFilesNote("");
         renderFiles();
-        rememberSeenFiles(currentData && currentData.user ? currentData.user.ID : null, filesData);
+        rememberSeenFiles(appState.currentData && appState.currentData.user ? appState.currentData.user.ID : null, filesData);
     } catch (error) {
         if (loadId !== filesLoadId) return;
         // Με λίστα ήδη στην οθόνη (αποτυχημένη ανανέωση) την κρατάμε και
@@ -2460,7 +2430,7 @@ function seenFilesBefore(userId) {
 function isNewFile(file) {
     // Ό,τι ανέβασες εσύ δεν είναι νέο για σένα.
     if (file.source === "submission") return false;
-    const userId = currentData && currentData.user ? currentData.user.ID : null;
+    const userId = appState.currentData && appState.currentData.user ? appState.currentData.user.ID : null;
     const seen = seenFilesBefore(userId).get(String(file.courseId));
     return Boolean(seen) && !seen.has(file.id);
 }
@@ -2810,7 +2780,7 @@ document.querySelectorAll("#tabFiles .sd-segment").forEach((button) => {
 paintFilesControls();
 
 function RenderloadingScreen(state) {
-    const currentLoaderRunId = ++loaderRunId;
+    const currentLoaderRunId = ++appState.loaderRunId;
     const step = $(".step");
     const progress = $(".progress");
     const percentText = $("#percent");
@@ -2829,10 +2799,10 @@ function RenderloadingScreen(state) {
         current = messages.length;
     }
     function runLoader() {
-        if (currentLoaderRunId !== loaderRunId) return;
+        if (currentLoaderRunId !== appState.loaderRunId) return;
 
         if (current >= messages.length) {
-            if (!dashboardReady) return;
+            if (!appState.dashboardReady) return;
 
             spinner.html("✓");
             spinner.css({
@@ -2861,7 +2831,7 @@ function RenderloadingScreen(state) {
             transform: "translateY(10px)",
         });
         setTimeout(() => {
-            if (currentLoaderRunId !== loaderRunId) return;
+            if (currentLoaderRunId !== appState.loaderRunId) return;
 
             messageText.text(messages[current]);
 
@@ -2892,5 +2862,4 @@ if (localStorage.getItem(rememberSessionKey) === "true") {
     returnToLogin();
 }
 
-// Για τα browser tests (import() μέσα στη σελίδα).
-export { openAppModal, closeAppModal, renderDashboardData };
+export { closeAppModal, openAppModal, renderDashboardData };

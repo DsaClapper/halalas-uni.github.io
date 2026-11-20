@@ -1,7 +1,7 @@
 // tests/names.mjs — node tests/names.mjs
 // Ένα όνομα που έμεινε σε άλλο module μετά τον χωρισμό δίνει ReferenceError
 // μόνο όταν τρέξει εκείνη η γραμμή — συχνά σε μονοπάτι σφάλματος που κανένα
-// browser test δεν περνάει. Το eslint (μόνο ο κανόνας no-undef) το βρίσκει
+// browser test δεν περνάει. Το eslint (no-undef, no-import-assign) το βρίσκει
 // χωρίς να τρέξει τίποτα. Εργαλείο ελέγχου, όπως το playwright: δεν μπαίνει
 // στο repo.
 import { spawnSync } from "node:child_process";
@@ -28,6 +28,8 @@ const result = spawnSync("npx", [
     "--yes", "eslint@9.15.0",
     "--no-config-lookup",
     "--rule", "no-undef: error",
+    // Ένα import δεν παίρνει νέα τιμή (TypeError όταν τρέξει η γραμμή).
+    "--rule", "no-import-assign: error",
     "--parser-options", "sourceType:module",
     "--parser-options", "ecmaVersion:latest",
     "--global", GLOBALS.join(","),

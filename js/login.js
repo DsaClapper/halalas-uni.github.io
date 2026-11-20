@@ -2,7 +2,8 @@
 import { appState, authBaseUrl, notificationsEnabledKey, rememberSessionKey } from "./state.js";
 import { openAppModal } from "./modal.js";
 import { notificationToggleInput, supportsPushNotifications, unregisterPushWorker } from "./notifications.js";
-import { DEFAULT_TAB, RenderloadingScreen, gradeSectionOpen, gradesFilter, gradesSearch, historyFilter, historyToggleInput, refreshDashboardData, renderDashboardData, resetFiles, selectTab, setHistoryNote } from "./app.js";
+import { refreshDashboardData } from "./refresh.js";
+import { DEFAULT_TAB, RenderloadingScreen, gradeSectionOpen, gradesFilter, gradesSearch, historyFilter, historyToggleInput, renderDashboardData, resetFiles, selectTab, setHistoryNote } from "./app.js";
 
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");

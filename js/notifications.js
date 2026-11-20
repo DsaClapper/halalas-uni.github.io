@@ -1,7 +1,7 @@
 // js/notifications.js — push ειδοποιήσεις και ο διακόπτης τους.
 import { appState, notificationsBaseUrl, notificationsEnabledKey } from "./state.js";
 import { openAppModal } from "./modal.js";
-import { setDashboardStatus } from "./app.js";
+import { setDashboardStatus } from "./refresh.js";
 
 const notificationToggle = document.getElementById("notificationToggle");
 const notificationToggleInput = document.getElementById("notificationToggleInput");

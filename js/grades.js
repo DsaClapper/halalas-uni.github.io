@@ -2,7 +2,8 @@
 import { appState } from "./state.js";
 import { escapeHtml } from "./util.js";
 import { countsInAverage, countsInDiploma } from "./summary.js";
-import { activePending, ensureFilesLoaded, historyFilter, openAssignmentsFor, renderHistory } from "./app.js";
+import { activePending, openAssignmentsFor } from "./assignments.js";
+import { ensureFilesLoaded, historyFilter, renderHistory } from "./app.js";
 
 // ------------------------------------------------------------------ Tabs
 // Οι τέσσερις ενότητες έφταναν τις 6 οθόνες scroll σε κινητό με ανοιχτά

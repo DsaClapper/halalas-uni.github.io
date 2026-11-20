@@ -17,17 +17,11 @@
     <title>Halalas University Portal</title>
     <link rel="icon" href="imgs/halalas-university-logo.png" type="image/png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <script src="js/app-config.js?v=20261115" defer></script>
-    <!-- ΣΗΜΑΝΤΙΚΟ: αυτό το ?v= είναι το μόνο που κάνει τον browser να
-         ξανακατεβάσει ένα φύλλο στυλ. Το GitHub Pages στέλνει
-         cache-control: max-age=14400, οπότε χωρίς αλλαγή εδώ το παλιό CSS
-         μένει μέχρι 4 ώρες — και επειδή το index.html ΔΕΝ είναι versioned,
-         ο browser παίρνει νέο HTML πάνω σε παλιό CSS: νέα στοιχεία χωρίς
-         κανόνες, δηλαδή σπασμένη σελίδα.
-         Άλλαξες css/*.css; Άλλαξε και την ημερομηνία του αντίστοιχου αρχείου. -->
-    <link rel="stylesheet" type="text/css" href="css/main.css?v=20261115" />
-    <link rel="stylesheet" type="text/css" href="css/dashboard.css?v=20261117" />
-    <link rel="stylesheet" type="text/css" href="css/loading.css?v=20260926" />
+    <script src="js/app-config.js" defer></script>
+    <!-- Η έκδοση (?v=<commit>) μπαίνει αυτόματα στο deploy: tools/stamp.mjs. -->
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
+    <link rel="stylesheet" type="text/css" href="css/dashboard.css" />
+    <link rel="stylesheet" type="text/css" href="css/loading.css" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Χωρίς αυτό το iOS διαλέγει μόνο του πώς φέρεται η status bar στην
          εγκατεστημένη εφαρμογή, και στο iOS 26 διάλεξε το χειρότερο: σελίδα
@@ -521,7 +515,7 @@
             : await Notification.requestPermission();
         if (permission !== "granted") return null;
 
-        const registration = await navigator.serviceWorker.register("/sw.js?v=20260926");
+        const registration = await navigator.serviceWorker.register("/sw.js");
         let subscription = await registration.pushManager.getSubscription();
         if (!subscription) {
             const keyResponse = await fetch(`${notificationsBaseUrl}/vapid-public-key`, {
@@ -1131,7 +1125,7 @@
     // Ο service worker (sw.js) φέρνει φρέσκια σελίδα σε κάθε άνοιγμα, όχι μόνο
     // σε όσους άνοιξαν ειδοποιήσεις. Ίδιο URL με το getPushSubscription, ώστε
     // να μένει μία καταχώρηση.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js?v=20260926").catch(() => {});
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
     // Η αρχική τιμή μετριέται μια φορά στο άνοιγμα· μετά ελέγχουμε όταν
     // επιστρέφεις στην εφαρμογή, που είναι η στιγμή που ένα deploy μπορεί να

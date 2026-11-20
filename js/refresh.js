@@ -1,7 +1,8 @@
 // js/refresh.js — ανανέωση δεδομένων, pull to refresh, έλεγχος έκδοσης.
 import { appState, authBaseUrl, scrollHost } from "./state.js";
 import { RELOGIN_MESSAGE, returnToLogin } from "./login.js";
-import { filesLoaded, loadFiles, renderDashboardData } from "./app.js";
+import { filesLoaded, loadFiles } from "./files.js";
+import { renderDashboardData } from "./app.js";
 
 function setDashboardStatus(message, isError = false) {
     const status = document.getElementById("dashboardStatus");

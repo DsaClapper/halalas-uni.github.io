@@ -5,7 +5,8 @@ import { notificationToggleInput, supportsPushNotifications, unregisterPushWorke
 import { refreshDashboardData } from "./refresh.js";
 import { DEFAULT_TAB, gradeSectionOpen, gradesFilter, gradesSearch, selectTab } from "./grades.js";
 import { historyFilter, historyToggleInput, setHistoryNote } from "./history.js";
-import { RenderloadingScreen, renderDashboardData, resetFiles } from "./app.js";
+import { resetFiles } from "./files.js";
+import { RenderloadingScreen, renderDashboardData } from "./app.js";
 
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");

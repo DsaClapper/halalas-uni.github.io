@@ -4,7 +4,7 @@ import { escapeHtml } from "./util.js";
 import { countsInAverage, countsInDiploma } from "./summary.js";
 import { activePending, openAssignmentsFor } from "./assignments.js";
 import { historyFilter, renderHistory } from "./history.js";
-import { ensureFilesLoaded } from "./app.js";
+import { ensureFilesLoaded } from "./files.js";
 
 // ------------------------------------------------------------------ Tabs
 // Οι τέσσερις ενότητες έφταναν τις 6 οθόνες scroll σε κινητό με ανοιχτά

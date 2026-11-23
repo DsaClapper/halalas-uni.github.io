@@ -150,30 +150,51 @@ scrollHost.addEventListener("touchend", async () => {
 });
 
 // ----------------------------------------------------- Έλεγχος έκδοσης
-// Σύγκριση του Last-Modified του index.html με αυτό που ίσχυε όταν άνοιξε
-// η εφαρμογή. Το GitHub Pages δεν στέλνει ETag για το index.html αλλά
-// στέλνει Last-Modified, και ένα HEAD αρκεί — δεν κατεβαίνει το σώμα.
-let loadedVersionStamp = null;
+// Η σελίδα ξέρει την έκδοσή της (το deploy τη γράφει στο <meta name="app-version">)
+// και το site λέει την τελευταία στο /version.json. Αν διαφέρουν, η σελίδα είναι
+// παλιά — από την cache, ή ανοιχτή από πριν το deploy — και ξαναφορτώνει μόνη
+// της, μία φορά. Ο service worker δεν αρκεί: στο iPhone, με την εφαρμογή στην
+// αρχική οθόνη, άνοιξε παλιά σελίδα παρ' όλα αυτά (2026-11-23).
+const pageVersion = document.querySelector('meta[name="app-version"]')?.content || "dev";
+const RELOADED_FOR_KEY = "halalasReloadedForVersion";
 
-async function readVersionStamp() {
+async function readLiveVersion() {
     try {
-        const response = await fetch("index.html", { method: "HEAD", cache: "no-store" });
-        return response.headers.get("last-modified");
+        const response = await fetch("/version.json", { cache: "no-store" });
+        if (!response.ok) return null;
+        const data = await response.json();
+        return typeof data.version === "string" ? data.version : null;
     } catch {
         return null;
     }
 }
 
 async function checkForUpdate() {
-    const stamp = await readVersionStamp();
-    if (!stamp) return;
-    if (loadedVersionStamp === null) {
-        loadedVersionStamp = stamp;
+    // Τοπικά, χωρίς σφράγισμα, δεν υπάρχει έκδοση να συγκρίνουμε.
+    if (pageVersion === "dev") return;
+    const live = await readLiveVersion();
+    if (!live || live === pageVersion) return;
+
+    // Ένα ανοιχτό παράθυρο (επιβεβαίωση, κωδικός) δεν πετιέται. Και αν
+    // ξαναφορτώσαμε ήδη για αυτή την έκδοση χωρίς να έρθει, δεν ξαναφορτώνουμε:
+    // κανένα ατελείωτο ξαναφόρτωμα. Και στα δύο, η μπάρα «νέα έκδοση».
+    let reloadedFor = null;
+    try {
+        reloadedFor = sessionStorage.getItem(RELOADED_FOR_KEY);
+    } catch {
+        reloadedFor = live; // χωρίς sessionStorage δεν ξέρουμε αν ξαναφορτώσαμε
+    }
+    if (!document.getElementById("appModal").hidden || reloadedFor === live) {
+        document.getElementById("updateBanner").hidden = false;
         return;
     }
-    if (stamp !== loadedVersionStamp) {
+    try {
+        sessionStorage.setItem(RELOADED_FOR_KEY, live);
+    } catch {
         document.getElementById("updateBanner").hidden = false;
+        return;
     }
+    location.reload();
 }
 
 document.getElementById("updateReloadBtn").addEventListener("click", () => location.reload());
@@ -183,9 +204,8 @@ document.getElementById("updateReloadBtn").addEventListener("click", () => locat
 // να μένει μία καταχώρηση.
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
-// Η αρχική τιμή μετριέται μια φορά στο άνοιγμα· μετά ελέγχουμε όταν
-// επιστρέφεις στην εφαρμογή, που είναι η στιγμή που ένα deploy μπορεί να
-// έχει μεσολαβήσει χωρίς να το ξέρεις.
+// Στο άνοιγμα, και όταν επιστρέφεις στην εφαρμογή: η στιγμή που ένα deploy
+// μπορεί να έχει μεσολαβήσει χωρίς να το ξέρεις.
 checkForUpdate();
 // Μια εφαρμογή στην αρχική οθόνη του κινητού δεν ξαναφορτώνει όταν την
 // ανοίγεις — απλώς ξυπνάει. Αν έχει περάσει ώρα, φέρνουμε φρέσκα δεδομένα.

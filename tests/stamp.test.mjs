@@ -82,5 +82,14 @@ test("an output folder inside the source is not copied into itself", async () =>
     const src = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-src-"));
     fs.writeFileSync(path.join(src, "index.html"), "x");
     await stamp(src, path.join(src, "_site"), V);
-    assert.deepEqual(fs.readdirSync(path.join(src, "_site")), ["index.html"]);
+    assert.deepEqual(fs.readdirSync(path.join(src, "_site")).sort(), ["index.html", "version.json"]);
+});
+
+test("the page knows its version and the site names the latest", async () => {
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-src-"));
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-out-"));
+    fs.writeFileSync(path.join(src, "index.html"), `<meta name="app-version" content="dev" />`);
+    await stamp(src, out, V);
+    assert.equal(fs.readFileSync(path.join(out, "index.html"), "utf8"), `<meta name="app-version" content="abc1234" />`);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(out, "version.json"), "utf8")), { version: "abc1234" });
 });

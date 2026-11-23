@@ -15,9 +15,14 @@ const ASSET_ATTR = /((?:href|src)=")((?!\/\/)(?![a-z][a-z0-9+.-]*:)[^"?#]+\.(?:c
 // import … from "./x.js", import "./x.js", import("./x.js"), export … from "./x.js"
 const RELATIVE_IMPORT = /(\bfrom\s*|\bimport\s*\(?\s*)(["'])(\.\.?\/[^"']+?\.js)(?:\?v=[^"']*)?\2/g;
 const SW_REGISTER = /register\((["'])\/sw\.js(?:\?v=[^"']*)?\1/g;
+// Η σελίδα ξέρει ποια έκδοση είναι· το /version.json λέει ποια είναι η τελευταία.
+const APP_VERSION = /(<meta name="app-version" content=")[^"]*(")/g;
 
 function stampHtml(text, version) {
-    return stampJs(text.replace(ASSET_ATTR, (_, attr, url) => `${attr}${url}?v=${version}"`), version);
+    return stampJs(
+        text.replace(ASSET_ATTR, (_, attr, url) => `${attr}${url}?v=${version}"`).replace(APP_VERSION, `$1${version}$2`),
+        version,
+    );
 }
 
 function stampJs(text, version) {
@@ -51,6 +56,7 @@ async function copy(src, out, version, skip, top = true) {
 export async function stamp(src, out, version) {
     if (!/^[0-9A-Za-z._-]+$/.test(version)) throw new Error(`bad version: ${version}`);
     await copy(path.resolve(src), path.resolve(out), version, path.resolve(out));
+    await fs.writeFile(path.join(out, "version.json"), JSON.stringify({ version }) + "\n");
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

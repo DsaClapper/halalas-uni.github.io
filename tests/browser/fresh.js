@@ -35,8 +35,10 @@ async function build(version, { oldWorker = false } = {}) {
     return out;
 }
 
-async function open(browser) {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// `noWorker`: χωρίς service worker, όπως όταν αυτός δεν βοηθάει (το iPhone με
+// την εφαρμογή στην αρχική οθόνη άνοιξε παλιά σελίδα από τη μνήμη του).
+async function open(browser, { noWorker = false } = {}) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: noWorker ? "block" : "allow" });
     const page = await ctx.newPage();
     const errors = [];
     const assets = [];
@@ -60,15 +62,17 @@ const build_ = async (page) => (await page.content()).match(/<!-- build (\w+) --
 
 (async () => {
     const { startServer } = await import("../serve.mjs");
-    const builds = { v0: await build("v0", { oldWorker: true }), v1: await build("v1"), v2: await build("v2") };
+    const builds = { v0: await build("v0", { oldWorker: true }), v1: await build("v1"), v2: await build("v2"), never: await build("v3") };
+    // Ο server λέει ότι υπάρχει έκδοση που η σελίδα δεν θα γίνει ποτέ.
+    fs.writeFileSync(path.join(builds.never, "version.json"), JSON.stringify({ version: "v9" }));
     const server = await startServer({ root: builds.v1 });
     const URL_ = `${server.url}/index.html`;
     const browser = await chromium.launch({ args: ["--host-resolver-rules=MAP uni-api.halalas-services.xyz 127.0.0.1:9"] });
     const results = [];
-    const check = async (name, fn) => {
+    const check = async (name, fn, options) => {
         let app = null;
         try {
-            app = await open(browser);
+            app = await open(browser, options);
             await fn(app);
             assert.deepEqual(app.errors, [], "page errors");
             results.push(`PASS  ${name}`);
@@ -116,6 +120,59 @@ const build_ = async (page) => (await page.content()).match(/<!-- build (\w+) --
         await reopen(page);
         assert.equal(await build_(page), "v2");
     });
+
+    const navigations = (page) => {
+        const seen = [];
+        page.on("framenavigated", (f) => f === page.mainFrame() && f.url().startsWith("http") && seen.push(f.url()));
+        return seen;
+    };
+    const bannerShown = (page) => page.evaluate(() => !document.getElementById("updateBanner").hidden);
+
+    // Η σελίδα ξέρει την έκδοσή της· αν ο server έχει νεότερη, ξαναφορτώνει
+    // μόνη της μία φορά — ακόμα κι όταν ο service worker δεν βοήθησε.
+    await check("a stale page from the cache updates itself", async ({ page }) => {
+        server.setRoot(builds.v1);
+        await page.goto(URL_, T);
+        await page.waitForTimeout(800);
+        server.setRoot(builds.v2);
+        await reopen(page); // από την cache: v1
+        await page.waitForFunction(() => document.documentElement.outerHTML.includes("<!-- build v2 -->"), null, T);
+        assert.equal(await bannerShown(page), false);
+    }, { noWorker: true });
+
+    await check("returning to an open app updates it", async ({ page }) => {
+        server.setRoot(builds.v1);
+        await page.goto(URL_, T);
+        await page.waitForTimeout(800);
+        server.setRoot(builds.v2);
+        await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+        await page.waitForFunction(() => document.documentElement.outerHTML.includes("<!-- build v2 -->"), null, T);
+    }, { noWorker: true });
+
+    await check("an open dialog is not thrown away: the banner shows instead", async ({ page }) => {
+        server.setRoot(builds.v1);
+        await page.goto(URL_, T);
+        await page.waitForTimeout(800);
+        const seen = navigations(page);
+        await page.evaluate(async () => {
+            const { openAppModal } = await import(document.querySelector('script[type="module"]').src.replace(/main\.js/, "modal.js"));
+            openAppModal({ title: "α", message: "α" });
+        });
+        server.setRoot(builds.v2);
+        await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+        await page.waitForTimeout(1500);
+        assert.deepEqual(seen, [], "no reload");
+        assert.equal(await bannerShown(page), true);
+    }, { noWorker: true });
+
+    await check("a version that never arrives reloads once, then shows the banner", async ({ page }) => {
+        server.setRoot(builds.never);
+        const seen = navigations(page);
+        await page.goto(URL_, T);
+        await page.waitForTimeout(3000);
+        assert.equal(seen.length, 2, `navigations: ${seen.length}`);
+        assert.equal(await bannerShown(page), true);
+    }, { noWorker: true });
 
     // «Χωρίς δίκτυο» = ο server κλείνει. Το ctx.setOffline δεν κόβει τα
     // αιτήματα του service worker, οπότε δεν θα έλεγχε τίποτα.

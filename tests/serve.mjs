@@ -1,7 +1,8 @@
 // tests/serve.mjs
 // Στατικός server για τα browser tests. Τα ES modules δεν φορτώνουν από
 // file://, και ο server μιμείται ό,τι κάνει το GitHub Pages με την cache:
-// 10' για τη σελίδα, 4 ώρες για τα υπόλοιπα, Last-Modified και 304.
+// 10' για τη σελίδα, 4 ώρες για τα υπόλοιπα, Last-Modified και 304, και
+// redirect για φάκελο χωρίς / στο τέλος.
 import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -30,6 +31,11 @@ export async function startServer({ root, port = 0, htmlMaxAge = 600 }) {
         }
         try {
             const stat = await fs.stat(file);
+            // Όπως το Pages: φάκελος χωρίς / στο τέλος → redirect.
+            if (stat.isDirectory()) {
+                res.writeHead(301, { Location: `${rel}/` });
+                return res.end();
+            }
             const modified = new Date(Math.floor(stat.mtimeMs / 1000) * 1000);
             const headers = {
                 "Content-Type": TYPES[path.extname(file)] || "application/octet-stream",

@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Δεν δημοσιεύονται.
-const SKIP = new Set([".git", ".github", ".superpowers", "tests", "tools", "docs"]);
+const SKIP = new Set([".git", ".github", ".gitignore", ".superpowers", "tests", "tools", "docs"]);
 
 // href="css/a.css" / src="js/b.js", όχι απόλυτα URLs (https:, //cdn).
 const ASSET_ATTR = /((?:href|src)=")((?!\/\/)(?![a-z][a-z0-9+.-]*:)[^"?#]+\.(?:css|js))(?:\?v=[^"]*)?"/gi;

@@ -9,9 +9,12 @@ self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim(
 self.addEventListener("fetch", (event) => {
     if (event.request.mode !== "navigate") return;
     // Με το URL, όχι με το ίδιο το request: ένα request πλοήγησης δεν δέχεται
-    // άλλες ρυθμίσεις cache (TypeError).
+    // άλλες ρυθμίσεις cache (TypeError). Τα redirects τα αφήνουμε στον browser
+    // ("manual"): μια πλοήγηση δεν δέχεται απάντηση που ακολούθησε ήδη redirect.
     const url = event.request.url;
-    event.respondWith(fetch(url, { cache: "no-cache" }).catch(() => fetch(url)));
+    event.respondWith(
+        fetch(url, { cache: "no-cache", redirect: "manual" }).catch(() => fetch(url, { redirect: "manual" })),
+    );
 });
 
 self.addEventListener("push", (event) => {

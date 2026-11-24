@@ -174,6 +174,18 @@ const build_ = async (page) => (await page.content()).match(/<!-- build (\w+) --
         assert.equal(await bannerShown(page), true);
     }, { noWorker: true });
 
+    // Το Pages στέλνει /φάκελος → /φάκελος/ με redirect. Ένας service worker
+    // που ακολουθεί μόνος του το redirect δίνει στον browser απάντηση που αυτός
+    // απορρίπτει για πλοήγηση: σελίδα σφάλματος αντί για τη σελίδα του server.
+    await check("a redirected page still opens through the worker", async ({ page }) => {
+        server.setRoot(builds.v1);
+        await page.goto(URL_, T);
+        assert.equal(await controlled(page), true, "a worker controls the page");
+        const response = await page.goto(`${server.url}/imgs`, T);
+        assert.equal(new URL(page.url()).pathname, "/imgs/");
+        assert.equal(response.status(), 404);
+    });
+
     // «Χωρίς δίκτυο» = ο server κλείνει. Το ctx.setOffline δεν κόβει τα
     // αιτήματα του service worker, οπότε δεν θα έλεγχε τίποτα.
     const offlineOpen = async (page, site) => {

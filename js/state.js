@@ -4,10 +4,6 @@ const authBaseUrl = "https://uni-api.halalas-services.xyz/auth";
 const rememberSessionKey = "halalasRememberSession";
 const notificationsBaseUrl = "https://uni-api.halalas-services.xyz/notifications";
 const notificationsEnabledKey = "halalasNotificationsEnabled";
-// Το ύψος του body ήταν καρφωμένο σε window.innerHeight με JavaScript, που
-// σε κινητό αλλάζει κάθε φορά που κρύβεται ή εμφανίζεται η μπάρα του
-// browser — κλασική πηγή για κομμένο περιεχόμενο και διπλό scrollbar.
-// Το `100dvh` στο CSS κάνει το ίδιο πράγμα σωστά και χωρίς listener.
 
 // Η κεφαλίδα κρατάει 210px σε desktop και ~120px σε κινητό για ένα
 // λογότυπο. Μαζεύεται μόλις αρχίσεις να κυλάς, οπότε ο χώρος πάει σε αυτό

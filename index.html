@@ -24,6 +24,21 @@
     <link rel="stylesheet" type="text/css" href="css/main.css" />
     <link rel="stylesheet" type="text/css" href="css/dashboard.css" />
     <link rel="stylesheet" type="text/css" href="css/loading.css" />
+    <!-- Όλα τα modules ζητούνται μαζί από την αρχή, αντί να ανακαλύπτονται
+         ένα ένα από τα imports (τρεις γύροι στο δίκτυο). Νέο αρχείο στο js/;
+         πρόσθεσέ το εδώ — το tests/preload.test.mjs το ελέγχει. -->
+    <link rel="modulepreload" href="js/assignments.js" />
+    <link rel="modulepreload" href="js/files.js" />
+    <link rel="modulepreload" href="js/grades.js" />
+    <link rel="modulepreload" href="js/history.js" />
+    <link rel="modulepreload" href="js/login.js" />
+    <link rel="modulepreload" href="js/main.js" />
+    <link rel="modulepreload" href="js/modal.js" />
+    <link rel="modulepreload" href="js/notifications.js" />
+    <link rel="modulepreload" href="js/refresh.js" />
+    <link rel="modulepreload" href="js/state.js" />
+    <link rel="modulepreload" href="js/summary.js" />
+    <link rel="modulepreload" href="js/util.js" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Χωρίς αυτό το iOS διαλέγει μόνο του πώς φέρεται η status bar στην
          εγκατεστημένη εφαρμογή, και στο iOS 26 διάλεξε το χειρότερο: σελίδα

@@ -16,7 +16,7 @@ const files = fs.readdirSync(path.join(root, "js"))
 
 // Τα globals του browser που χρησιμοποιεί πραγματικά ο κώδικας.
 const GLOBALS = [
-    "window", "document", "navigator", "location", "history", "localStorage", "sessionStorage",
+    "window", "document", "navigator", "location", "localStorage", "sessionStorage",
     "fetch", "Response", "URL", "URLSearchParams", "Notification", "PushManager", "Intl", "console",
     "setTimeout", "clearTimeout", "setInterval", "clearInterval", "requestAnimationFrame",
     "cancelAnimationFrame", "getComputedStyle", "matchMedia", "atob", "btoa", "Blob",
@@ -24,15 +24,20 @@ const GLOBALS = [
     "HTMLElement", "Event", "CustomEvent", "CSS", "$",
 ];
 
-const result = spawnSync("npx", [
+const eslint = (sourceType, globals, targets) => spawnSync("npx", [
     "--yes", "eslint@9.15.0",
     "--no-config-lookup",
     "--rule", "no-undef: error",
     // Ένα import δεν παίρνει νέα τιμή (TypeError όταν τρέξει η γραμμή).
     "--rule", "no-import-assign: error",
-    "--parser-options", "sourceType:module",
+    "--parser-options", `sourceType:${sourceType}`,
     "--parser-options", "ecmaVersion:latest",
-    "--global", GLOBALS.join(","),
-    ...files,
-], { cwd: root, stdio: "inherit" });
-process.exit(result.status ?? 1);
+    "--global", globals.join(","),
+    ...targets,
+], { cwd: root, stdio: "inherit" }).status;
+
+// Ο service worker είναι κλασικό script σε άλλο περιβάλλον: self, clients.
+const SW_GLOBALS = ["self", "clients", "fetch", "console"];
+const app = eslint("module", GLOBALS, files);
+const sw = eslint("script", SW_GLOBALS, ["sw.js"]);
+process.exit(app === 0 && sw === 0 ? 0 : 1);

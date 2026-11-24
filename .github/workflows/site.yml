@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: site-${{ github.ref }}
   cancel-in-progress: false
@@ -16,8 +19,8 @@ jobs:
       NODE_PATH: /tmp/pw/node_modules
     steps:
       - uses: actions/checkout@v4
-      - name: Stamping
-        run: node --test tests/stamp.test.mjs
+      - name: Stamping and preload list
+        run: node --test tests/stamp.test.mjs tests/preload.test.mjs
       - name: Undeclared names
         run: node tests/names.mjs
       - name: Playwright

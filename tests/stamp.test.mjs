@@ -93,3 +93,20 @@ test("the page knows its version and the site names the latest", async () => {
     assert.equal(fs.readFileSync(path.join(out, "index.html"), "utf8"), `<meta name="app-version" content="abc1234" />`);
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(out, "version.json"), "utf8")), { version: "abc1234" });
 });
+
+test(".gitignore is not published", async () => {
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-src-"));
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-out-"));
+    fs.writeFileSync(path.join(src, "index.html"), "x");
+    fs.writeFileSync(path.join(src, ".gitignore"), "tests/out/\n");
+    await stamp(src, out, V);
+    assert.equal(fs.existsSync(path.join(out, ".gitignore")), false);
+});
+
+test("modulepreload links get the version", async () => {
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-src-"));
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-out-"));
+    fs.writeFileSync(path.join(src, "index.html"), `<link rel="modulepreload" href="js/state.js" />`);
+    await stamp(src, out, V);
+    assert.equal(fs.readFileSync(path.join(out, "index.html"), "utf8"), `<link rel="modulepreload" href="js/state.js?v=abc1234" />`);
+});

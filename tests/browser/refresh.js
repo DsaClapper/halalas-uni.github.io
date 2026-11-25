@@ -122,6 +122,41 @@ const hasFresh = (page) => page.evaluate(() => document.body.textContent.include
     check("χωρίς κωδικό, κουμπί: εξηγεί", (await t.page.$eval("#dashboardStatus", (e) => e.textContent)).includes("δεν ανανεώθηκαν"));
     await t.ctx.close();
 
+    // 9. Το eLearn δεν απάντησε: το λέει και στην αθόρυβη ανανέωση του
+    // ανοίγματος — αλλιώς ένας βαθμός που ήδη βγήκε μοιάζει να μην υπάρχει
+    // (έτσι χάθηκε ένας στις 2026-11-24).
+    const ELEARN = "Το eLearn δεν απάντησε· οι βαθμοί του Moodle είναι από την τελευταία επιτυχή ανάγνωση.";
+    const statusOf = (page) => page.evaluate(() => {
+        const el = document.getElementById("dashboardStatus");
+        return { text: el.textContent.trim(), error: el.classList.contains("is-error") };
+    });
+    t = await open(browser, () => [200, { ...STALE, refreshed: { moodle: false, official: true }, officialRecent: false, officialRefreshable: true }]);
+    await t.page.waitForTimeout(2000);
+    const s9 = await statusOf(t.page);
+    check("eLearn σιωπηλό, άνοιγμα: το λέει", s9.text === ELEARN && s9.error, JSON.stringify(s9));
+    await t.page.evaluate(() => document.getElementById("refreshBtn").click());
+    await t.page.waitForTimeout(1200);
+    const s9b = await statusOf(t.page);
+    check("eLearn σιωπηλό, κουμπί: το λέει", s9b.text === ELEARN && s9b.error, JSON.stringify(s9b));
+    await t.ctx.close();
+
+    // 10. Δεν απάντησε κανένα από τα δύο: και τα δύο μηνύματα.
+    t = await open(browser, () => [200, { ...STALE, refreshed: { moodle: false, official: false }, officialRecent: false, officialRefreshable: true }]);
+    await t.page.waitForTimeout(800);
+    await t.page.evaluate(() => document.getElementById("refreshBtn").click());
+    await t.page.waitForTimeout(1200);
+    const s10 = await statusOf(t.page);
+    check("κανένα δεν απάντησε: και τα δύο", s10.text === `${ELEARN} Το eduportal δεν απάντησε· οι επίσημοι βαθμοί είναι από την τελευταία επιτυχή ανάγνωση.`, JSON.stringify(s10));
+    await t.ctx.close();
+
+    // 11. Μια επόμενη επιτυχημένη ανανέωση σβήνει το μήνυμα.
+    t = await open(browser, (n) => [200, { ...FRESH, refreshed: { moodle: n > 1, official: true }, officialRecent: false, officialRefreshable: true }]);
+    await t.page.waitForTimeout(2000);
+    await t.page.evaluate(() => document.getElementById("refreshBtn").click());
+    await t.page.waitForTimeout(1200);
+    check("επόμενη επιτυχία: σβήνει", (await statusOf(t.page)).text === "");
+    await t.ctx.close();
+
     // 8. Παλιά σύνδεση: login με μήνυμα που εξηγεί το γιατί.
     {
         const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });

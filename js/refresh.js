@@ -288,16 +288,23 @@ async function runRefresh({ silent = false } = {}) {
         // `officialRecent`: διαβάστηκαν πριν λίγα λεπτά (ο server δεν κάνει
         // νέο login στο eduportal πιο συχνά από κάθε 10'), άρα είναι φρέσκοι.
         const official = (data.refreshed && data.refreshed.official) || data.officialRecent === true;
-        if (silent && official) setDashboardStatus("");
-        if (silent) return;
-        setDashboardStatus(
-            official
-                ? ""
-                : data.officialRefreshable === false
-                  ? "Οι επίσημοι βαθμοί δεν ανανεώθηκαν — άνοιξε τις ειδοποιήσεις για να γίνεται αυτόματα."
-                  : "Το eduportal δεν απάντησε· οι επίσημοι βαθμοί είναι από την τελευταία επιτυχή ανάγνωση.",
-            !official
-        );
+        // Το ίδιο για το eLearn, και εδώ ακόμα και στην αθόρυβη ανανέωση του
+        // ανοίγματος: εκεί ακριβώς ψάχνεις έναν βαθμό που μόλις είδες στο eLearn
+        // (2026-11-24: δεν απάντησε, και η εφαρμογή έδειχνε τα παλιά σιωπηλά).
+        const moodle = !(data.refreshed && data.refreshed.moodle === false);
+        const elearnNote = moodle ? "" : "Το eLearn δεν απάντησε· οι βαθμοί του Moodle είναι από την τελευταία επιτυχή ανάγνωση.";
+        if (silent) {
+            if (!moodle) setDashboardStatus(elearnNote, true);
+            else if (official) setDashboardStatus("");
+            return;
+        }
+        const officialNote = official
+            ? ""
+            : data.officialRefreshable === false
+              ? "Οι επίσημοι βαθμοί δεν ανανεώθηκαν — άνοιξε τις ειδοποιήσεις για να γίνεται αυτόματα."
+              : "Το eduportal δεν απάντησε· οι επίσημοι βαθμοί είναι από την τελευταία επιτυχή ανάγνωση.";
+        const note = [elearnNote, officialNote].filter(Boolean).join(" ");
+        setDashboardStatus(note, Boolean(note));
     } catch (error) {
         if (silent) return;
         setDashboardStatus(

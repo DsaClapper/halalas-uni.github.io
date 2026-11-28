@@ -428,6 +428,12 @@
             <h2 id="appModalTitle"></h2>
             <p class="app-modal-message" id="appModalMessage"></p>
             <div class="app-modal-input-group" id="appModalInputGroup" hidden>
+                <!-- Οι αποθηκευμένοι κωδικοί του κινητού γράφουν το όνομα χρήστη
+                     στο πεδίο ακριβώς πριν από έναν κωδικό. Χωρίς αυτό το κρυφό
+                     πεδίο, εκείνο ήταν η αναζήτηση των Αρχείων: το iPhone έγραφε
+                     εκεί το csd… κάθε φορά. -->
+                <input type="text" class="app-modal-username" name="username" autocomplete="username"
+                       tabindex="-1" aria-hidden="true" />
                 <label for="appModalInput">Κωδικός</label>
                 <input type="password" id="appModalInput" autocomplete="current-password" />
             </div>

@@ -130,6 +130,18 @@
         font: 16px var(--font-body);
     }
 
+    /* Υπάρχει μόνο για τους αποθηκευμένους κωδικούς (βλ. index.html): αόρατο,
+       αλλά όχι display:none, που το αγνοούν. */
+    .app-modal-input-group .app-modal-username {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        border: 0;
+        opacity: 0;
+        pointer-events: none;
+    }
+
     .app-modal-input-group input:focus {
         border-color: var(--mint-teal);
         outline: none;
